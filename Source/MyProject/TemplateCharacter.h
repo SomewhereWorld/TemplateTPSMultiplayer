@@ -50,9 +50,11 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
 	UCameraComponent* FirstPersonCameraComponent;
 
-	// Pawn mesh: 1st person view (arms: seen only by self)
-	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
-	USkeletalMeshComponent* FirstPersonMesh;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
+	USpringArmComponent* SpringArm;
+
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Camera)
+	USkeletalMeshComponent* MeshThirdPerson;
 
 	// ****functions****
 	// Refresh the HUD of scores
@@ -78,15 +80,15 @@ private:
 
 	// Reset Stats of the player (server side)
 	UFUNCTION(Reliable, Server, WithValidation)
-	void ServerLookUp(FRotator rot);
-	virtual void ServerLookUp_Implementation(FRotator rot);
-	virtual bool ServerLookUp_Validate(FRotator rot);
+	void ServerChangeMeshRotation(FRotator rot);
+	virtual void ServerChangeMeshRotation_Implementation(const FRotator& rot);
+	virtual bool ServerChangeMeshRotation_Validate(const FRotator& rot);
 
 	// Reset Stats of the player (server side)
 	UFUNCTION(Reliable, NetMulticast, WithValidation)
-	void MulticastLookUp(FRotator rot);
-	virtual void MulticastLookUp_Implementation(FRotator rot);
-	virtual bool MulticastLookUp_Validate(FRotator rot);
+	void MulticastChangeMeshRotation(FRotator rot);
+	virtual void MulticastChangeMeshRotation_Implementation(const FRotator& rot);
+	virtual bool MulticastChangeMeshRotation_Validate(const FRotator& rot);
 
 	// Handles the Fire on the client
 	void Fire();
@@ -106,12 +108,14 @@ private:
 
 	//clears jump flag when key is released
 	UFUNCTION()
-	void OnStopJump();
+	void OnStopJump();
+
 	// Show scores
 	void ShowScores();
 
 	// Stop Show scores
-	void StopShowScores();
+	void StopShowScores();
+
 	// Reset Stats of the player
 	void ResetStats();
 
@@ -127,7 +131,9 @@ private:
 
 	// Damage of the player
 	UPROPERTY(Replicated)
-	int _damage;	// where the player is looking at
+	int _damage;
+
+	// where the player is looking at
 	UPROPERTY(Replicated)
 	float _verticalLook;
 

@@ -15,27 +15,22 @@ ATemplateCharacter::ATemplateCharacter()
 	bReplicates = true;
 	bReplicateMovement = true;
 
+	MeshThirdPerson = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Mesh Third Person"));
+	MeshThirdPerson->SetupAttachment(GetCapsuleComponent());
+
+	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("Spring Arm"));
+	SpringArm->SetupAttachment(GetCapsuleComponent());
+
 	// Create a CameraComponent
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
-	FirstPersonCameraComponent->SetupAttachment(GetCapsuleComponent());
+	FirstPersonCameraComponent->SetupAttachment(SpringArm);
 	// Position the camera a bit above the eyes
 	FirstPersonCameraComponent->RelativeLocation = FVector(0, 0, BaseEyeHeight);
 	// Allow the pawn to control rotation.
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
 
-	// Create a mesh '1st person' view (when controlling this pawn)
-	FirstPersonMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("FirstPersonMesh"));
-	// only the owning player will see this mesh
-	FirstPersonMesh->SetOnlyOwnerSee(true);
-	FirstPersonMesh->SetupAttachment(FirstPersonCameraComponent);
-	FirstPersonMesh->bCastDynamicShadow = false;
-	FirstPersonMesh->CastShadow = false;
-
 	FireStart = CreateDefaultSubobject<UArrowComponent>(TEXT("Fire Start"));
 	FireStart->SetupAttachment(FirstPersonCameraComponent);
-
-	// everyone but the owner can see the regular body mesh
-	GetMesh()->SetOwnerNoSee(true);
 
 	Init();
 
@@ -82,7 +77,19 @@ void ATemplateCharacter::GetLifetimeReplicatedProps(TArray< FLifetimeProperty>& 
 	DOREPLIFETIME(ATemplateCharacter, _damage);
 	DOREPLIFETIME(ATemplateCharacter, _verticalLook);
 	DOREPLIFETIME(ATemplateCharacter, _playerState);
-}int ATemplateCharacter::GetTeamNumber(){	return _teamNumber;}ATemplatePlayerState* ATemplateCharacter::GetCastedPlayerState(){	return _playerState;}
+	DOREPLIFETIME(ATemplateCharacter, MeshThirdPerson);
+
+}
+
+int ATemplateCharacter::GetTeamNumber()
+{
+	return _teamNumber;
+}
+
+ATemplatePlayerState* ATemplateCharacter::GetCastedPlayerState()
+{
+	return _playerState;
+}
 
 void ATemplateCharacter::Init()
 {
@@ -95,12 +102,14 @@ void ATemplateCharacter::MoveForward(float Amount)
 {
 	if (Controller != NULL && Amount != 0.0f)
 	{
-		FRotator Rotation = Controller->GetControlRotation();
+		FRotator Rotation = SpringArm->GetComponentRotation();
 		if (GetCharacterMovement()->IsMovingOnGround() || GetCharacterMovement()->IsFalling())
 		{
 			Rotation.Pitch = 0.0f;
 		}
 		const FVector Direction = FRotationMatrix(Rotation).GetScaledAxis(EAxis::X);
+		FRotator toRot = FRotator(GetMesh()->GetComponentRotation().Pitch, SpringArm->GetComponentRotation().Yaw - 90.0f, GetMesh()->GetComponentRotation().Roll);
+		ServerChangeMeshRotation(toRot);
 		AddMovementInput(Direction, Amount);
 	}
 }
@@ -109,7 +118,7 @@ void ATemplateCharacter::MoveRight(float Amount)
 {
 	if (Controller != NULL && Amount != 0.0f)
 	{
-		FRotator Rotation = Controller->GetControlRotation();
+		FRotator Rotation = SpringArm->GetComponentRotation();
 		const FVector Direction = FRotationMatrix(Rotation).GetScaledAxis(EAxis::Y);
 		AddMovementInput(Direction, Amount);
 	}
@@ -117,7 +126,7 @@ void ATemplateCharacter::MoveRight(float Amount)
 
 void ATemplateCharacter::TurnAround(float Amount)
 {
-	AddControllerYawInput(Amount);
+	SpringArm->AddWorldRotation(FRotator(0.0f, Amount, 0.0f));
 }
 
 void ATemplateCharacter::LookUp(float Amount)
@@ -125,30 +134,28 @@ void ATemplateCharacter::LookUp(float Amount)
 	if (_verticalLook + Amount <= 89.0f && _verticalLook + Amount >= -89.0f)
 	{
 		_verticalLook += Amount;
-		FRotator rot = FirstPersonCameraComponent->GetComponentRotation();
-		rot.Yaw = GetActorRotation().Yaw;
+		FRotator rot = SpringArm->GetComponentRotation();
 		rot.Pitch = _verticalLook;
-		ServerLookUp(rot);
+		SpringArm->SetWorldRotation(FRotator(_verticalLook, rot.Yaw, rot.Roll));
 	}
 }
 
-void ATemplateCharacter::ATemplateCharacter::ServerLookUp_Implementation(FRotator rot)
+void ATemplateCharacter::ATemplateCharacter::ServerChangeMeshRotation_Implementation(const FRotator& rot)
 {
-	FirstPersonCameraComponent->SetWorldRotation(FRotator(rot.Pitch, rot.Yaw, rot.Roll));
-	MulticastLookUp(rot);
+	MulticastChangeMeshRotation(rot);
 }
 
-bool ATemplateCharacter::ATemplateCharacter::ServerLookUp_Validate(FRotator rot)
+bool ATemplateCharacter::ATemplateCharacter::ServerChangeMeshRotation_Validate(const FRotator& rot)
 {
 	return true;
 }
 
-void ATemplateCharacter::MulticastLookUp_Implementation(FRotator rot)
+void ATemplateCharacter::MulticastChangeMeshRotation_Implementation(const FRotator& rot)
 {
-	FirstPersonCameraComponent->SetWorldRotation(FRotator(rot.Pitch, rot.Yaw, rot.Roll));
+	MeshThirdPerson->SetWorldRotation(rot);
 }
 
-bool ATemplateCharacter::MulticastLookUp_Validate(FRotator rot)
+bool ATemplateCharacter::MulticastChangeMeshRotation_Validate(const FRotator& rot)
 {
 	return true;
 }
@@ -179,7 +186,8 @@ void ATemplateCharacter::ServerFire_Implementation()
 			UE_LOG(LogTemp, Warning, TEXT("%s hits %s"), *PlayerState->PlayerName, *MyPC->PlayerState->PlayerName);
 			MyPC->ReceiveDamage(_damage, this);
 		}
-	}
+	}
+
 }
 
 bool ATemplateCharacter::ServerFire_Validate()
@@ -268,7 +276,22 @@ void ATemplateCharacter::ServerResetStats_Implementation()
 bool ATemplateCharacter::ServerResetStats_Validate()
 {
 	return true;
-}void ATemplateCharacter::Respawn(){	ResetStats();	for (TActorIterator<AMyProjectGameMode> ActorItr(GetWorld()); ActorItr; ++ActorItr)
+}
+
+void ATemplateCharacter::Respawn()
+{
+	ResetStats();
+	for (TActorIterator<AMyProjectGameMode> ActorItr(GetWorld()); ActorItr; ++ActorItr)
 	{
 		AMyProjectGameMode* gameMode = Cast<AMyProjectGameMode>(*ActorItr);
-		if (gameMode)		{			gameMode->ServerRespawn(this);		}	}}void ATemplateCharacter::GetPlayerStateAtStart(){	_playerState = Cast<ATemplatePlayerState>(PlayerState);}
+		if (gameMode)
+		{
+			gameMode->ServerRespawn(this);
+		}
+	}
+}
+
+void ATemplateCharacter::GetPlayerStateAtStart()
+{
+	_playerState = Cast<ATemplatePlayerState>(PlayerState);
+}
