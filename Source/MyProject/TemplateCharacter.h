@@ -42,6 +42,27 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = Scores)
 	bool ShowingScore;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
+	float _timeToZoom;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
+	float _horizontalAcceleration;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
+	float _verticalAcceleration;
+
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = Camera)
+	bool _zoomed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
+	float _speedNormal;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
+	float _speedSprint;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
+	float _speedWalk;
+
 	// ****components****
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Template - Player")
 	UArrowComponent* FireStart;
@@ -69,8 +90,6 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent)
 	void HideScores();
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
-	float _timeToZoom;
 
 private:
 
@@ -132,6 +151,12 @@ private:
 	virtual void ServerResetStats_Implementation();
 	virtual bool ServerResetStats_Validate();
 
+	// Set the max speed of the player (server side)
+	UFUNCTION(Reliable, Server, WithValidation)
+	void ServerChangeSpeed(float newSpeed);
+	virtual void ServerChangeSpeed_Implementation(float newSpeed);
+	virtual bool ServerChangeSpeed_Validate(float newSpeed);
+
 	// Health of the player
 	UPROPERTY(Replicated)
 	int _health;
@@ -170,11 +195,21 @@ private:
 	bool _zoomDirection;
 
 	float _zoomValue;
-	
-	bool _zoomed;
 
 	FVector _cameraStart;
 	FVector _cameraEnd;
+
+	// Set the zoomed variable (server side)
+	UFUNCTION(Reliable, Server, WithValidation)
+	void ServerIsZoomed(bool newState);
+	virtual void ServerIsZoomed_Implementation(bool newState);
+	virtual bool ServerIsZoomed_Validate(bool newState);
+
+	// Set the zoomed variable (Multicast side)
+	/*UFUNCTION(Reliable, NetMulticast, WithValidation)
+	void MulticastIsZoomed(bool newState);
+	virtual void MulticastIsZoomed_Implementation(bool newState);
+	virtual bool MulticastIsZoomed_Validate(bool newState);*/
 
 	/** ZOOM **/
 };

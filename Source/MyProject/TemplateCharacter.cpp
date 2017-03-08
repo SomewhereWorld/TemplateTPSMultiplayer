@@ -106,6 +106,7 @@ void ATemplateCharacter::GetLifetimeReplicatedProps(TArray< FLifetimeProperty>& 
 	DOREPLIFETIME(ATemplateCharacter, _verticalLook);
 	DOREPLIFETIME(ATemplateCharacter, _playerState);
 	DOREPLIFETIME(ATemplateCharacter, MeshThirdPerson);
+	DOREPLIFETIME(ATemplateCharacter, _zoomed);
 
 }
 
@@ -128,6 +129,11 @@ void ATemplateCharacter::Init()
 	_zoomValue = 0;
 	_timeToZoom = 4.0f;
 	_zoomed = false;
+	_horizontalAcceleration = 1.0f;
+	_verticalAcceleration = 1.0f;
+	_speedNormal = 600.0f;
+	_speedWalk = 300.0f;
+	_speedSprint = 900.0f;
 }
 
 void ATemplateCharacter::MoveForward(float Amount)
@@ -152,13 +158,15 @@ void ATemplateCharacter::MoveRight(float Amount)
 	{
 		FRotator Rotation = SpringArm->GetComponentRotation();
 		const FVector Direction = FRotationMatrix(Rotation).GetScaledAxis(EAxis::Y);
+		FRotator toRot = FRotator(GetMesh()->GetComponentRotation().Pitch, SpringArm->GetComponentRotation().Yaw - 90.0f, GetMesh()->GetComponentRotation().Roll);
+		ServerChangeMeshRotation(toRot);
 		AddMovementInput(Direction, Amount);
 	}
 }
 
 void ATemplateCharacter::TurnAround(float Amount)
 {
-	SpringArm->AddWorldRotation(FRotator(0.0f, Amount, 0.0f));
+	SpringArm->AddWorldRotation(FRotator(0.0f, Amount * _horizontalAcceleration, 0.0f));
 	if (_zoomed)
 	{
 		FRotator toRot = FRotator(GetMesh()->GetComponentRotation().Pitch, SpringArm->GetComponentRotation().Yaw - 90.0f, GetMesh()->GetComponentRotation().Roll);
@@ -168,9 +176,9 @@ void ATemplateCharacter::TurnAround(float Amount)
 
 void ATemplateCharacter::LookUp(float Amount)
 {
-	if (_verticalLook + Amount <= 89.0f && _verticalLook + Amount >= -89.0f)
+	if (_verticalLook + (Amount * _verticalAcceleration) <= 89.0f && _verticalLook + (Amount * _verticalAcceleration) >= -89.0f)
 	{
-		_verticalLook += Amount;
+		_verticalLook += Amount * _verticalAcceleration;
 		FRotator rot = SpringArm->GetComponentRotation();
 		rot.Pitch = _verticalLook;
 		SpringArm->SetWorldRotation(FRotator(_verticalLook, rot.Yaw, rot.Roll));
@@ -314,6 +322,16 @@ bool ATemplateCharacter::ServerResetStats_Validate()
 	return true;
 }
 
+void ATemplateCharacter::ServerChangeSpeed_Implementation(float newSpeed)
+{
+	GetCharacterMovement()->MaxWalkSpeed = newSpeed;
+}
+
+bool ATemplateCharacter::ServerChangeSpeed_Validate(float newSpeed)
+{
+	return true;
+}
+
 void ATemplateCharacter::Respawn()
 {
 	ResetStats();
@@ -334,9 +352,12 @@ void ATemplateCharacter::GetPlayerStateAtStart()
 
 void ATemplateCharacter::Zoom()
 {
+	GetCharacterMovement()->MaxWalkSpeed = _speedWalk;
+	ServerChangeSpeed(_speedWalk);
 	isZooming = true;
 	_zoomDirection = true;
 	_zoomed = true;
+	ServerIsZoomed(true);
 	_cameraStart = ThirdPersonCameraComponent->GetRelativeTransform().GetLocation();
 	_cameraEnd = ZoomCameraComponent->GetRelativeTransform().GetLocation();
 	FRotator toRot = FRotator(GetMesh()->GetComponentRotation().Pitch, SpringArm->GetComponentRotation().Yaw - 90.0f, GetMesh()->GetComponentRotation().Roll);
@@ -345,7 +366,20 @@ void ATemplateCharacter::Zoom()
 
 void ATemplateCharacter::UnZoom()
 {
+	GetCharacterMovement()->MaxWalkSpeed = _speedNormal;
+	ServerChangeSpeed(_speedNormal);
 	isZooming = true;
 	_zoomDirection = false;
 	_zoomed = false;
+	ServerIsZoomed(false);
+}
+
+void ATemplateCharacter::ServerIsZoomed_Implementation(bool newState)
+{
+	_zoomed = newState;
+}
+
+bool ATemplateCharacter::ServerIsZoomed_Validate(bool newState)
+{
+	return true;
 }
