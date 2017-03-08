@@ -26,5 +26,4 @@ protected:
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Template")
 	int _teamNumber;
-	
 };

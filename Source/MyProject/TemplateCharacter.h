@@ -46,9 +46,13 @@ protected:
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Template - Player")
 	UArrowComponent* FireStart;
 
-	// First person camera
+	// Third person camera
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
-	UCameraComponent* FirstPersonCameraComponent;
+	UCameraComponent* ThirdPersonCameraComponent;
+
+	// Zoom camera
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
+	UCameraComponent* ZoomCameraComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
 	USpringArmComponent* SpringArm;
@@ -64,6 +68,9 @@ protected:
 	// Close the score tab
 	UFUNCTION(BlueprintImplementableEvent)
 	void HideScores();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
+	float _timeToZoom;
 
 private:
 
@@ -150,4 +157,24 @@ private:
 	TArray<ATemplateCharacter*> _allDamageSenders;
 
 	void Respawn();
+
+	/** ZOOM **/
+
+	void Zoom();
+
+	void UnZoom();
+
+	bool isZooming;
+
+	// true = zoom forward
+	bool _zoomDirection;
+
+	float _zoomValue;
+	
+	bool _zoomed;
+
+	FVector _cameraStart;
+	FVector _cameraEnd;
+
+	/** ZOOM **/
 };

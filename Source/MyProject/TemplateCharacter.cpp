@@ -21,16 +21,17 @@ ATemplateCharacter::ATemplateCharacter()
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("Spring Arm"));
 	SpringArm->SetupAttachment(GetCapsuleComponent());
 
+	ZoomCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("Zoom Camera"));
+	ZoomCameraComponent->SetupAttachment(SpringArm);
+
 	// Create a CameraComponent
-	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
-	FirstPersonCameraComponent->SetupAttachment(SpringArm);
-	// Position the camera a bit above the eyes
-	FirstPersonCameraComponent->RelativeLocation = FVector(0, 0, BaseEyeHeight);
+	ThirdPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("ThirdPersonCameraComponent"));
+	ThirdPersonCameraComponent->SetupAttachment(SpringArm);
 	// Allow the pawn to control rotation.
-	FirstPersonCameraComponent->bUsePawnControlRotation = true;
+	ThirdPersonCameraComponent->bUsePawnControlRotation = true;
 
 	FireStart = CreateDefaultSubobject<UArrowComponent>(TEXT("Fire Start"));
-	FireStart->SetupAttachment(FirstPersonCameraComponent);
+	FireStart->SetupAttachment(ThirdPersonCameraComponent);
 
 	Init();
 
@@ -50,6 +51,32 @@ void ATemplateCharacter::Tick( float DeltaTime )
 {
 	Super::Tick( DeltaTime );
 
+	if (isZooming)
+	{
+		if (_zoomDirection)
+		{
+			_zoomValue += DeltaTime * _timeToZoom;
+			if (_zoomValue >= 1.0f)
+			{
+				_zoomValue = 1.0f;
+				isZooming = false;
+				_zoomDirection = !_zoomDirection;
+			}
+		}
+		else
+		{
+			_zoomValue -= DeltaTime * _timeToZoom;
+			if (_zoomValue <= 0)
+			{
+				_zoomValue = 0.0f;
+				isZooming = false;
+				_zoomDirection = !_zoomDirection;
+			}
+		}
+		ThirdPersonCameraComponent->SetRelativeLocation(FMath::Lerp(_cameraStart, _cameraEnd, _zoomValue));
+
+	}
+
 }
 
 // Called to bind functionality to input
@@ -66,7 +93,8 @@ void ATemplateCharacter::SetupPlayerInputComponent(class UInputComponent* InputC
 	InputComponent->BindAction("Jump", IE_Released, this, &ATemplateCharacter::OnStopJump);
 	InputComponent->BindAction("ShowScore", IE_Pressed, this, &ATemplateCharacter::ShowScores);
 	InputComponent->BindAction("ShowScore", IE_Released, this, &ATemplateCharacter::StopShowScores);
-
+	InputComponent->BindAction("Zoom", IE_Pressed, this, &ATemplateCharacter::Zoom);
+	InputComponent->BindAction("Zoom", IE_Released, this, &ATemplateCharacter::UnZoom);
 }
 
 void ATemplateCharacter::GetLifetimeReplicatedProps(TArray< FLifetimeProperty>& OutLifetimeProps) const
@@ -96,6 +124,10 @@ void ATemplateCharacter::Init()
 	_health = 100;
 	_damage = 10;
 	_fireLength = 5000.0f;
+	isZooming = false;
+	_zoomValue = 0;
+	_timeToZoom = 4.0f;
+	_zoomed = false;
 }
 
 void ATemplateCharacter::MoveForward(float Amount)
@@ -127,6 +159,11 @@ void ATemplateCharacter::MoveRight(float Amount)
 void ATemplateCharacter::TurnAround(float Amount)
 {
 	SpringArm->AddWorldRotation(FRotator(0.0f, Amount, 0.0f));
+	if (_zoomed)
+	{
+		FRotator toRot = FRotator(GetMesh()->GetComponentRotation().Pitch, SpringArm->GetComponentRotation().Yaw - 90.0f, GetMesh()->GetComponentRotation().Roll);
+		ServerChangeMeshRotation(toRot);
+	}
 }
 
 void ATemplateCharacter::LookUp(float Amount)
@@ -171,9 +208,9 @@ void ATemplateCharacter::Fire()
 void ATemplateCharacter::ServerFire_Implementation()
 {
 	//location the PC is focused on
-	const FVector Start = FirstPersonCameraComponent ->GetComponentLocation();
+	const FVector Start = ThirdPersonCameraComponent->GetComponentLocation();
 	//_fireLength units in facing direction of PC (_fireLength units in front of the Camera)
-	const FVector End = Start + (FirstPersonCameraComponent ->GetForwardVector() * _fireLength);
+	const FVector End = Start + (ThirdPersonCameraComponent->GetForwardVector() * _fireLength);
 	FHitResult HitInfo;
 	FCollisionQueryParams QParams;
 	ECollisionChannel Channel = ECollisionChannel::ECC_Visibility;
@@ -213,7 +250,6 @@ void ATemplateCharacter::ReceiveDamage(int Amount, ATemplateCharacter* sender)
 		if (sender && sender->GetCastedPlayerState())
 		{
 			sender->GetCastedPlayerState()->AddKill(1);
-			UE_LOG(LogTemp, Warning, TEXT("add score"));
 		}
 		if (_playerState)
 		{
@@ -294,4 +330,22 @@ void ATemplateCharacter::Respawn()
 void ATemplateCharacter::GetPlayerStateAtStart()
 {
 	_playerState = Cast<ATemplatePlayerState>(PlayerState);
+}
+
+void ATemplateCharacter::Zoom()
+{
+	isZooming = true;
+	_zoomDirection = true;
+	_zoomed = true;
+	_cameraStart = ThirdPersonCameraComponent->GetRelativeTransform().GetLocation();
+	_cameraEnd = ZoomCameraComponent->GetRelativeTransform().GetLocation();
+	FRotator toRot = FRotator(GetMesh()->GetComponentRotation().Pitch, SpringArm->GetComponentRotation().Yaw - 90.0f, GetMesh()->GetComponentRotation().Roll);
+	ServerChangeMeshRotation(toRot);
+}
+
+void ATemplateCharacter::UnZoom()
+{
+	isZooming = true;
+	_zoomDirection = false;
+	_zoomed = false;
 }
