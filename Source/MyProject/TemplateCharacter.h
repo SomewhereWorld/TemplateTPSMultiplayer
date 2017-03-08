@@ -3,6 +3,7 @@
 #pragma once
 
 #include "GameFramework/Character.h"
+#include "TemplateData.h"
 #include "TemplateCharacter.generated.h"
 
 class ATemplatePlayerState;
@@ -39,47 +40,62 @@ protected:
 	int _teamNumber;
 
 	// Showing score
-	UPROPERTY(BlueprintReadOnly, Category = Scores)
+	UPROPERTY(BlueprintReadOnly, Category = "Template - Score")
 	bool ShowingScore;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Template - Camera")
 	float _timeToZoom;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Template - Camera")
 	float _horizontalAcceleration;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Template - Camera")
 	float _verticalAcceleration;
 
-	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = Camera)
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Template - Camera")
 	bool _zoomed;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Template - Camera")
 	float _speedNormal;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Template - Camera")
 	float _speedSprint;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Template - Camera")
 	float _speedWalk;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Template - Camera")
+	float _speedCrouch;
+
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Template - Player")
+	bool _isSprinting;
+
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Template - Player")
+	bool _isCrouching;
+
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Template - Player")
+	EPlayerState _currentPlayerState;
 
 	// ****components****
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Template - Player")
 	UArrowComponent* FireStart;
 
 	// Third person camera
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Template - Camera")
 	UCameraComponent* ThirdPersonCameraComponent;
 
 	// Zoom camera
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Template - Camera")
 	UCameraComponent* ZoomCameraComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Template - Camera")
 	USpringArmComponent* SpringArm;
 
-	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Camera)
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Template - Player")
 	USkeletalMeshComponent* MeshThirdPerson;
+
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Template - Player")
+	UPostProcessComponent* PostProcessHurt;
 
 	// ****functions****
 	// Refresh the HUD of scores
@@ -89,6 +105,12 @@ protected:
 	// Close the score tab
 	UFUNCTION(BlueprintImplementableEvent)
 	void HideScores();
+
+	// Show or not the hurt vignette to the player
+	UFUNCTION(Reliable, Client, WithValidation)
+	void ClientShowVignette(bool newState);
+	virtual void ClientShowVignette_Implementation(bool newState);
+	virtual bool ClientShowVignette_Validate(bool newState);
 
 
 private:
@@ -121,9 +143,9 @@ private:
 
 	// Handles the Fire on the server
 	UFUNCTION(Reliable, Server, WithValidation)
-	void ServerFire();
-	virtual void ServerFire_Implementation();
-	virtual bool ServerFire_Validate();
+	void ServerFire(FVector Start, FVector End);
+	virtual void ServerFire_Implementation(FVector Start, FVector End);
+	virtual bool ServerFire_Validate(FVector Start, FVector End);
 
 	// when the player take damage
 	void ReceiveDamage(int Amount, ATemplateCharacter* sender);
@@ -153,9 +175,15 @@ private:
 
 	// Set the max speed of the player (server side)
 	UFUNCTION(Reliable, Server, WithValidation)
-	void ServerChangeSpeed(float newSpeed);
-	virtual void ServerChangeSpeed_Implementation(float newSpeed);
-	virtual bool ServerChangeSpeed_Validate(float newSpeed);
+	void ServerChangeSpeed();
+	virtual void ServerChangeSpeed_Implementation();
+	virtual bool ServerChangeSpeed_Validate();
+
+	// Set the new state of the player (server side)
+	UFUNCTION(Reliable, Server, WithValidation)
+	void ServerChangePlayerState(EPlayerState newState);
+	virtual void ServerChangePlayerState_Implementation(EPlayerState newState);
+	virtual bool ServerChangePlayerState_Validate(EPlayerState newState);
 
 	// Health of the player
 	UPROPERTY(Replicated)
@@ -189,7 +217,7 @@ private:
 
 	void UnZoom();
 
-	bool isZooming;
+	bool _isZooming;
 
 	// true = zoom forward
 	bool _zoomDirection;
@@ -205,11 +233,28 @@ private:
 	virtual void ServerIsZoomed_Implementation(bool newState);
 	virtual bool ServerIsZoomed_Validate(bool newState);
 
-	// Set the zoomed variable (Multicast side)
-	/*UFUNCTION(Reliable, NetMulticast, WithValidation)
-	void MulticastIsZoomed(bool newState);
-	virtual void MulticastIsZoomed_Implementation(bool newState);
-	virtual bool MulticastIsZoomed_Validate(bool newState);*/
-
 	/** ZOOM **/
+
+	void Sprint();
+	void StopSprint();
+
+	// Set the sprint variable (server side)
+	UFUNCTION(Reliable, Server, WithValidation)
+	void ServerIsSprinting(bool newState);
+	virtual void ServerIsSprinting_Implementation(bool newState);
+	virtual bool ServerIsSprinting_Validate(bool newState);
+
+	float _limitVignette;
+
+	void CrouchPlayer();
+
+	void UnCrouchPlayer();
+
+	// Set the sprint variable (server side)
+	UFUNCTION(Reliable, Server, WithValidation)
+	void ServerIsCrouch(bool newState);
+	virtual void ServerIsCrouch_Implementation(bool newState);
+	virtual bool ServerIsCrouch_Validate(bool newState);
+
+	void DEBUGPROPERTIES();
 };
