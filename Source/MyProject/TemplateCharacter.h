@@ -112,6 +112,10 @@ protected:
 	virtual void ClientShowVignette_Implementation(bool newState);
 	virtual bool ClientShowVignette_Validate(bool newState);
 
+	// where the player is looking at vertically
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Template - Player")
+	float _verticalLook;
+
 
 private:
 
@@ -193,10 +197,6 @@ private:
 	UPROPERTY(Replicated)
 	int _damage;
 
-	// where the player is looking at
-	UPROPERTY(Replicated)
-	float _verticalLook;
-
 	UFUNCTION()
 	void GetPlayerStateAtStart();
 
@@ -255,6 +255,12 @@ private:
 	void ServerIsCrouch(bool newState);
 	virtual void ServerIsCrouch_Implementation(bool newState);
 	virtual bool ServerIsCrouch_Validate(bool newState);
+
+	// replicates to all the vertical aim (Server side)
+	UFUNCTION(Reliable, Server, WithValidation)
+	void ServerChangeVerticalAim(float Amount);
+	virtual void ServerChangeVerticalAim_Implementation(float Amount);
+	virtual bool ServerChangeVerticalAim_Validate(float Amount);
 
 	void DEBUGPROPERTIES();
 };

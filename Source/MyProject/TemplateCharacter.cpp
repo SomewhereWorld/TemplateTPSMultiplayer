@@ -231,6 +231,7 @@ void ATemplateCharacter::LookUp(float Amount)
 	if (_verticalLook + (Amount * _verticalAcceleration) <= 89.0f && _verticalLook + (Amount * _verticalAcceleration) >= -89.0f)
 	{
 		_verticalLook += Amount * _verticalAcceleration;
+		ServerChangeVerticalAim(_verticalLook);
 		FRotator rot = SpringArm->GetComponentRotation();
 		rot.Pitch = _verticalLook;
 		SpringArm->SetWorldRotation(FRotator(_verticalLook, rot.Yaw, rot.Roll));
@@ -564,6 +565,17 @@ void ATemplateCharacter::ServerIsCrouch_Implementation(bool newState)
 }
 
 bool ATemplateCharacter::ServerIsCrouch_Validate(bool newState)
+{
+	return true;
+}
+
+void ATemplateCharacter::ServerChangeVerticalAim_Implementation(float Amount)
+{
+	_verticalLook = Amount;
+	UE_LOG(LogTemp, Warning, TEXT("vertical DEBUG %f"), _verticalLook);
+}
+
+bool ATemplateCharacter::ServerChangeVerticalAim_Validate(float Amount)
 {
 	return true;
 }
