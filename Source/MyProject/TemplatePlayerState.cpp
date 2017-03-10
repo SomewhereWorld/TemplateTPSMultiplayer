@@ -10,6 +10,19 @@ ATemplatePlayerState::ATemplatePlayerState()
 	_death = 0;
 	_kills = 0;
 	_assist = 0;
+	_playerTeamNumber = 0;
+}
+
+void ATemplatePlayerState::GetLifetimeReplicatedProps(TArray< FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ATemplatePlayerState, _playerName);
+	DOREPLIFETIME(ATemplatePlayerState, _kills);
+	DOREPLIFETIME(ATemplatePlayerState, _assist);
+	DOREPLIFETIME(ATemplatePlayerState, _death);
+	DOREPLIFETIME(ATemplatePlayerState, _playerScore);
+	DOREPLIFETIME(ATemplatePlayerState, _playerTeamNumber);
 }
 
 void ATemplatePlayerState::AddKill(int Amount)
@@ -60,13 +73,7 @@ FString ATemplatePlayerState::GetName()
 	return _playerName;
 }
 
-void ATemplatePlayerState::GetLifetimeReplicatedProps(TArray< FLifetimeProperty>& OutLifetimeProps) const
+int ATemplatePlayerState::GetPlayerTeamNumber()
 {
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(ATemplatePlayerState, _playerName);
-	DOREPLIFETIME(ATemplatePlayerState, _kills);
-	DOREPLIFETIME(ATemplatePlayerState, _assist);
-	DOREPLIFETIME(ATemplatePlayerState, _death);
-	DOREPLIFETIME(ATemplatePlayerState, _playerScore);
+	return _playerTeamNumber;
 }

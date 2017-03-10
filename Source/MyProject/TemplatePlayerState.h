@@ -32,6 +32,8 @@ public:
 	int GetScore();
 	UFUNCTION(BlueprintCallable, Category = "Template")
 	FString GetName();
+	UFUNCTION(BlueprintCallable, Category = "Template")
+	int GetPlayerTeamNumber();
 
 	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps)const override;
 
@@ -51,4 +53,7 @@ protected:
 	
 	UPROPERTY(Replicated)
 	int _assist;
+
+	UPROPERTY(Replicated)
+	int _playerTeamNumber;
 };
