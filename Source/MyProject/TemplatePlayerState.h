@@ -35,6 +35,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Template")
 	int GetPlayerTeamNumber();
 
+	UFUNCTION(BlueprintCallable, Category = "Template")
+	void SetPlayerTeamNumber(int NewTeam);
+
 	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps)const override;
 
 protected:

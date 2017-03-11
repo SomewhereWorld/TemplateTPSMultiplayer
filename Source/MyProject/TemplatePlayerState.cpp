@@ -77,3 +77,8 @@ int ATemplatePlayerState::GetPlayerTeamNumber()
 {
 	return _playerTeamNumber;
 }
+
+void ATemplatePlayerState::SetPlayerTeamNumber(int NewTeam)
+{
+	_playerTeamNumber = NewTeam;
+}

@@ -28,7 +28,13 @@ public:
 
 	ATemplatePlayerState* GetCastedPlayerState();
 
+	UFUNCTION(BlueprintCallable, Category = "Template - Player")
 	int GetTeamNumber();
+
+	UFUNCTION(BlueprintCallable, Category = "Template - Player")
+	int GetHealth();
+	UFUNCTION(BlueprintCallable, Category = "Template - Player")
+	int GetMaxHealth();
 
 protected:
 
@@ -76,6 +82,18 @@ protected:
 	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Template - Player")
 	EPlayerState _currentPlayerState;
 
+	// where the player is looking at vertically
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Template - Player")
+	float _verticalLook;
+
+	// time in seconds
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Template - Player")
+	float _regenSpeed;
+
+	// time before starting to regen after taking a hit(in seconds)
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Template - Player")
+	float _timeToRegen;
+
 	// ****components****
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Template - Player")
 	UArrowComponent* FireStart;
@@ -111,10 +129,6 @@ protected:
 	void ClientShowVignette(bool newState);
 	virtual void ClientShowVignette_Implementation(bool newState);
 	virtual bool ClientShowVignette_Validate(bool newState);
-
-	// where the player is looking at vertically
-	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Template - Player")
-	float _verticalLook;
 
 
 private:
@@ -193,9 +207,18 @@ private:
 	UPROPERTY(Replicated)
 	int _health;
 
+	UPROPERTY(Replicated)
+	int _healthMax;
+
 	// Damage of the player
 	UPROPERTY(Replicated)
 	int _damage;
+
+	// increasing time before starting to regen
+	float _currentTimeToRegen;
+	
+	// increasing time to recover hp
+	float _currentRegen;
 
 	UFUNCTION()
 	void GetPlayerStateAtStart();
@@ -261,6 +284,12 @@ private:
 	void ServerChangeVerticalAim(float Amount);
 	virtual void ServerChangeVerticalAim_Implementation(float Amount);
 	virtual bool ServerChangeVerticalAim_Validate(float Amount);
+
+	// if <0 then lose life
+	UFUNCTION(Reliable, Server, WithValidation)
+	void ServerChangeLife(float Amount);
+	virtual void ServerChangeLife_Implementation(float Amount);
+	virtual bool ServerChangeLife_Validate(float Amount);
 
 	void DEBUGPROPERTIES();
 };

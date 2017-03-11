@@ -84,6 +84,28 @@ void ATemplateCharacter::Tick( float DeltaTime )
 
 	}
 
+	if (HasAuthority())
+	{
+		if (_health < _healthMax)
+		{
+			_currentTimeToRegen += DeltaTime;
+			if (_currentTimeToRegen >= _timeToRegen)
+			{
+				_currentRegen += DeltaTime;
+				if (_currentRegen >= _regenSpeed)
+				{
+					_currentRegen = 0;
+					//ServerChangeLife(1);
+					_health += 1;
+					if (_health > _limitVignette)
+					{
+						ClientShowVignette(false);
+					}
+				}
+			}
+		}
+	}
+
 }
 
 // Called to bind functionality to input
@@ -124,12 +146,23 @@ void ATemplateCharacter::GetLifetimeReplicatedProps(TArray< FLifetimeProperty>& 
 	DOREPLIFETIME(ATemplateCharacter, _isSprinting);
 	DOREPLIFETIME(ATemplateCharacter, _currentPlayerState);
 	DOREPLIFETIME(ATemplateCharacter, _isCrouching);
+	DOREPLIFETIME(ATemplateCharacter, _healthMax);
 
 }
 
 int ATemplateCharacter::GetTeamNumber()
 {
 	return _teamNumber;
+}
+
+int ATemplateCharacter::GetHealth()
+{
+	return _health;
+}
+
+int ATemplateCharacter::GetMaxHealth()
+{
+	return _healthMax;
 }
 
 ATemplatePlayerState* ATemplateCharacter::GetCastedPlayerState()
@@ -143,12 +176,9 @@ void ATemplateCharacter::ClientShowVignette_Implementation(bool newState)
 	{
 		float newWeight = 1.0f - ((float)_health / _limitVignette);
 		PostProcessHurt->BlendWeight = newWeight;
-		UE_LOG(LogTemp, Warning, TEXT("Vignette OUI %f"), newWeight);
-		UE_LOG(LogTemp, Warning, TEXT("_health %d"), _health);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Vignette NON"));
 		PostProcessHurt->BlendWeight = 0.0f;
 	}
 }
@@ -160,7 +190,8 @@ bool ATemplateCharacter::ClientShowVignette_Validate(bool newState)
 
 void ATemplateCharacter::Init()
 {
-	_health = 100;
+	_healthMax = 100;
+	_health = _healthMax;
 	_damage = 10;
 	_fireLength = 5000.0f;
 	_isZooming = false;
@@ -173,9 +204,11 @@ void ATemplateCharacter::Init()
 	_speedWalk = 300.0f;
 	_speedSprint = 900.0f;
 	_speedCrouch = 150.0f;
-	_limitVignette = 40.0f;
+	_limitVignette = 50.0f;
 	_isCrouching = false;
 	_isSprinting = false;
+	_timeToRegen = 5.0f;
+	_regenSpeed = 0.1f;
 }
 
 void ATemplateCharacter::MoveForward(float Amount)
@@ -301,17 +334,15 @@ bool ATemplateCharacter::ServerFire_Validate(FVector Start, FVector End)
 void ATemplateCharacter::ReceiveDamage(int Amount, ATemplateCharacter* sender)
 {
 	_health -= Amount;
+	_currentTimeToRegen = 0;
 
 	if (!_allDamageSenders.Contains(sender))
 	{
 		_allDamageSenders.Add(sender);
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("life %d"), _health);
-
 	if (_health <= 0)
 	{
-
 		_health = 0;
 
 		if (sender && sender->GetCastedPlayerState())
@@ -337,9 +368,8 @@ void ATemplateCharacter::ReceiveDamage(int Amount, ATemplateCharacter* sender)
 	}
 	else if (_health <= _limitVignette)
 	{
-		FTimerDelegate RespawnDelegate = FTimerDelegate::CreateUObject(this, &ATemplateCharacter::ClientShowVignette, true);
-		//D.BindDynamic(this, &ATemplateCharacter::ClientShowVignette, true);
-		GetWorld()->GetTimerManager().SetTimer(_startTimerHandle, RespawnDelegate, 0.05f, false);
+		FTimerDelegate vignetteDelegate = FTimerDelegate::CreateUObject(this, &ATemplateCharacter::ClientShowVignette, true);
+		GetWorld()->GetTimerManager().SetTimer(_startTimerHandle, vignetteDelegate, 0.01f, false);
 	}
 	else
 	{
@@ -572,13 +602,25 @@ bool ATemplateCharacter::ServerIsCrouch_Validate(bool newState)
 void ATemplateCharacter::ServerChangeVerticalAim_Implementation(float Amount)
 {
 	_verticalLook = Amount;
-	UE_LOG(LogTemp, Warning, TEXT("vertical DEBUG %f"), _verticalLook);
 }
 
 bool ATemplateCharacter::ServerChangeVerticalAim_Validate(float Amount)
 {
 	return true;
 }
+
+void ATemplateCharacter::ServerChangeLife_Implementation(float Amount)
+{
+	_health += Amount;
+}
+
+bool ATemplateCharacter::ServerChangeLife_Validate(float Amount)
+{
+	return true;
+}
+
+
+
 
 void ATemplateCharacter::DEBUGPROPERTIES()
 {
