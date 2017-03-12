@@ -30,7 +30,10 @@ public:
 private:
 	void GetAllRespawn();
 
+	void AffectTeams();
+	
 	int _indexRespawnOne;
 	int _indexRespawnTwo;
 
+	FTimerHandle _startTimerHandle;
 };
