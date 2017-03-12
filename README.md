@@ -5,6 +5,7 @@ Legacy is an Unreal Engine 4 project (4.13). It's a template made by Antoine Gar
 Features Done :
 
   - Health Regen
+  - Reloading
 
 Features in progress :
 
@@ -14,6 +15,7 @@ Features in progress :
   - Team
   - Basic map
   - Weapons
+  - Weapons Sounds
 
 Features incoming in the project :
 
@@ -21,3 +23,4 @@ Features incoming in the project :
   - Power choosing
   - Lobby 
   - Customization
+  - More Sounds
