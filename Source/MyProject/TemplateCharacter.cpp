@@ -4,6 +4,7 @@
 #include "TemplateCharacter.h"
 #include "TemplatePlayerState.h"
 #include "MyProjectGameMode.h"
+#include "TemplateWeapon.h"
 
 // Sets default values
 ATemplateCharacter::ATemplateCharacter()
@@ -51,6 +52,12 @@ void ATemplateCharacter::BeginPlay()
 	_cameraStart = ThirdPersonCameraComponent->GetRelativeTransform().GetLocation();
 	ClientShowVignette(false);
 
+	_weapon = GetWorld()->SpawnActor<ATemplateWeapon>(exempleWeapon, FVector::ZeroVector, FRotator::ZeroRotator);
+	_weapon->AttachToComponent(MeshThirdPerson, FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("WeaponSocket"));
+
+	_fireLength = _weapon->GetFireLength();
+	_damage = _weapon->GetDamage();
+	//ServerInitWithWeapon(_weapon);
 }
 
 // Called every frame
@@ -106,6 +113,25 @@ void ATemplateCharacter::Tick( float DeltaTime )
 		}
 	}
 
+	if (!HasAuthority() && _wantToFire && _weapon)
+	{
+		if (_weapon->CanFire())
+		{
+			//location the PC is focused on
+			const FVector Start = ThirdPersonCameraComponent->GetComponentLocation();
+			//_fireLength units in facing direction of PC (_fireLength units in front of the Camera)
+			const FVector End = Start + (ThirdPersonCameraComponent->GetForwardVector() * _fireLength);
+
+			_weapon->Fire();
+
+			ServerFire(Start, End);
+
+			if (_weapon->IsEmpty())
+			{
+				Reload();
+			}
+		}
+	}
 }
 
 // Called to bind functionality to input
@@ -119,6 +145,7 @@ void ATemplateCharacter::SetupPlayerInputComponent(class UInputComponent* InputC
 	InputComponent->BindAxis("LookAround", this, &ATemplateCharacter::TurnAround);
 
 	InputComponent->BindAction("Fire", IE_Pressed, this, &ATemplateCharacter::Fire);
+	InputComponent->BindAction("Fire", IE_Released, this, &ATemplateCharacter::Stopfire);
 	InputComponent->BindAction("Jump", IE_Pressed, this, &ATemplateCharacter::OnStartJump);
 	InputComponent->BindAction("Jump", IE_Released, this, &ATemplateCharacter::OnStopJump);
 	InputComponent->BindAction("ShowScore", IE_Pressed, this, &ATemplateCharacter::ShowScores);
@@ -129,6 +156,7 @@ void ATemplateCharacter::SetupPlayerInputComponent(class UInputComponent* InputC
 	InputComponent->BindAction("Sprint", IE_Released, this, &ATemplateCharacter::StopSprint);
 	InputComponent->BindAction("Crouch", IE_Pressed, this, &ATemplateCharacter::CrouchPlayer);
 	InputComponent->BindAction("Crouch", IE_Released, this, &ATemplateCharacter::UnCrouchPlayer);
+	InputComponent->BindAction("Reload", IE_Pressed, this, &ATemplateCharacter::Reload);
 
 	InputComponent->BindAction("DEBUG", IE_Released, this, &ATemplateCharacter::DEBUGPROPERTIES);
 }
@@ -147,7 +175,8 @@ void ATemplateCharacter::GetLifetimeReplicatedProps(TArray< FLifetimeProperty>& 
 	DOREPLIFETIME(ATemplateCharacter, _currentPlayerState);
 	DOREPLIFETIME(ATemplateCharacter, _isCrouching);
 	DOREPLIFETIME(ATemplateCharacter, _healthMax);
-
+	DOREPLIFETIME(ATemplateCharacter, _weapon);
+	DOREPLIFETIME(ATemplateCharacter, _wantToReload);
 }
 
 int ATemplateCharacter::GetTeamNumber()
@@ -163,6 +192,11 @@ int ATemplateCharacter::GetHealth()
 int ATemplateCharacter::GetMaxHealth()
 {
 	return _healthMax;
+}
+
+bool ATemplateCharacter::GetIsReloading()
+{
+	return _wantToReload;
 }
 
 ATemplatePlayerState* ATemplateCharacter::GetCastedPlayerState()
@@ -209,6 +243,8 @@ void ATemplateCharacter::Init()
 	_isSprinting = false;
 	_timeToRegen = 5.0f;
 	_regenSpeed = 0.1f;
+	_wantToFire = false;
+	_wantToReload = false;
 }
 
 void ATemplateCharacter::MoveForward(float Amount)
@@ -295,17 +331,20 @@ void ATemplateCharacter::Fire()
 {
 	if (Role < ROLE_Authority)
 	{
-		//location the PC is focused on
-		const FVector Start = ThirdPersonCameraComponent->GetComponentLocation();
-		//_fireLength units in facing direction of PC (_fireLength units in front of the Camera)
-		const FVector End = Start + (ThirdPersonCameraComponent->GetForwardVector() * _fireLength);
-
-		ServerFire(Start, End);
+		_wantToFire = true;
 	}
+}
+
+void ATemplateCharacter::Stopfire()
+{
+	_wantToFire = false;
 }
 
 void ATemplateCharacter::ServerFire_Implementation(FVector Start, FVector End)
 {
+
+	/*_weapon->*/MulticastPlayFireSound();
+
 	FHitResult HitInfo;
 	FCollisionQueryParams QParams;
 	QParams.AddIgnoredActor(this);
@@ -565,6 +604,16 @@ bool ATemplateCharacter::ServerIsSprinting_Validate(bool newState)
 	return true;
 }
 
+void ATemplateCharacter::ServerIsReloading_Implementation(bool newState)
+{
+	_wantToReload = newState;
+}
+
+bool ATemplateCharacter::ServerIsReloading_Validate(bool newState)
+{
+	return true;
+}
+
 void ATemplateCharacter::CrouchPlayer()
 {
 	if (_currentPlayerState != EPlayerState::Crouching)
@@ -619,11 +668,75 @@ bool ATemplateCharacter::ServerChangeLife_Validate(float Amount)
 	return true;
 }
 
+void ATemplateCharacter::ServerInitWithWeapon_Implementation(ATemplateWeapon* theWeapon)
+{
+	_fireLength = theWeapon->GetFireLength();
+	_damage = theWeapon->GetDamage();
+}
 
+bool ATemplateCharacter::ServerInitWithWeapon_Validate(ATemplateWeapon* theWeapon)
+{
+	return true;
+}
 
+void ATemplateCharacter::Reload()
+{
+	_weapon->Reload();
+	ServerChangeWantToReload(true);
+}
+
+void ATemplateCharacter::EndReload()
+{
+	if (HasAuthority())
+	{
+		ClientEndReload();
+	}
+}
+
+void ATemplateCharacter::ClientEndReload_Implementation()
+{
+	_wantToReload = false;
+	ServerIsReloading(false);
+}
+
+bool ATemplateCharacter::ClientEndReload_Validate()
+{
+	return true;
+}
+
+void ATemplateCharacter::ServerChangeWantToReload_Implementation(bool newState)
+{
+	_wantToReload = true;
+	MulticastPlayReloadSound();
+}
+
+bool ATemplateCharacter::ServerChangeWantToReload_Validate(bool newState)
+{
+	return true;
+}
 
 void ATemplateCharacter::DEBUGPROPERTIES()
 {
 	UE_LOG(LogTemp, Warning, TEXT("life DEBUG %d"), _health);
 
+}
+
+void ATemplateCharacter::MulticastPlayFireSound_Implementation()
+{
+	_weapon->PlayFireSound();
+}
+
+bool ATemplateCharacter::MulticastPlayFireSound_Validate()
+{
+	return true;
+}
+
+void ATemplateCharacter::MulticastPlayReloadSound_Implementation()
+{
+	_weapon->PlayReloadSound();
+}
+
+bool ATemplateCharacter::MulticastPlayReloadSound_Validate()
+{
+	return true;
 }

@@ -7,6 +7,7 @@
 #include "TemplateCharacter.generated.h"
 
 class ATemplatePlayerState;
+class ATemplateWeapon;
 
 UCLASS()
 class MYPROJECT_API ATemplateCharacter : public ACharacter
@@ -35,6 +36,12 @@ public:
 	int GetHealth();
 	UFUNCTION(BlueprintCallable, Category = "Template - Player")
 	int GetMaxHealth();
+
+	UFUNCTION(BlueprintCallable, Category = "Template - Player")
+	bool GetIsReloading();
+
+	UFUNCTION(BlueprintCallable, Category = "Template - Player")
+	void EndReload();
 
 protected:
 
@@ -77,22 +84,35 @@ protected:
 	bool _isSprinting;
 
 	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Template - Player")
+	bool _wantToFire;
+
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Template - Player")
+	bool _wantToReload;
+
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Template - Player")
 	bool _isCrouching;
 
 	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Template - Player")
 	EPlayerState _currentPlayerState;
 
 	// where the player is looking at vertically
-	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Template - Player")
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadOnly, Category = "Template - Player")
 	float _verticalLook;
 
 	// time in seconds
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Template - Player")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Template - Player")
 	float _regenSpeed;
 
 	// time before starting to regen after taking a hit(in seconds)
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Template - Player")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Template - Player")
 	float _timeToRegen;
+
+	// current weapon equipped
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Template - Player")
+	ATemplateWeapon* _weapon;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Template - Player")
+	TSubclassOf<ATemplateWeapon> exempleWeapon;
 
 	// ****components****
 	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Template - Player")
@@ -158,6 +178,8 @@ private:
 
 	// Handles the Fire on the client
 	void Fire();
+
+	void Stopfire();
 
 	// Handles the Fire on the server
 	UFUNCTION(Reliable, Server, WithValidation)
@@ -290,6 +312,44 @@ private:
 	void ServerChangeLife(float Amount);
 	virtual void ServerChangeLife_Implementation(float Amount);
 	virtual bool ServerChangeLife_Validate(float Amount);
+
+	// Init player with the weapon variables
+	UFUNCTION(Reliable, Server, WithValidation)
+	void ServerInitWithWeapon(ATemplateWeapon* theWeapon);
+	virtual void ServerInitWithWeapon_Implementation(ATemplateWeapon* theWeapon);
+	virtual bool ServerInitWithWeapon_Validate(ATemplateWeapon* theWeapon);
+
+	/** RELOAD **/
+
+	UFUNCTION(Reliable, Client, WithValidation)
+	void ClientEndReload();
+	virtual void ClientEndReload_Implementation();
+	virtual bool ClientEndReload_Validate();
+
+	UFUNCTION(Reliable, Server, WithValidation)
+	void ServerChangeWantToReload(bool newState);
+	virtual void ServerChangeWantToReload_Implementation(bool newState);
+	virtual bool ServerChangeWantToReload_Validate(bool newState);
+
+	void Reload();
+
+	// Set the reloading variable (server side)
+	UFUNCTION(Reliable, Server, WithValidation)
+	void ServerIsReloading(bool newState);
+	virtual void ServerIsReloading_Implementation(bool newState);
+	virtual bool ServerIsReloading_Validate(bool newState);
+
+	/** END RELOAD **/
+
+	UFUNCTION(Reliable, NetMulticast, WithValidation)
+	void MulticastPlayFireSound();
+	virtual void MulticastPlayFireSound_Implementation();
+	virtual bool MulticastPlayFireSound_Validate();
+
+	UFUNCTION(Reliable, NetMulticast, WithValidation)
+	void MulticastPlayReloadSound();
+	virtual void MulticastPlayReloadSound_Implementation();
+	virtual bool MulticastPlayReloadSound_Validate();
 
 	void DEBUGPROPERTIES();
 };
