@@ -150,6 +150,8 @@ protected:
 	virtual void ClientShowVignette_Implementation(bool newState);
 	virtual bool ClientShowVignette_Validate(bool newState);
 
+	UFUNCTION(BlueprintCallable, Category = "Template - Player")
+	void ApplyNewPower();
 
 private:
 
@@ -350,6 +352,20 @@ private:
 	void MulticastPlayReloadSound();
 	virtual void MulticastPlayReloadSound_Implementation();
 	virtual bool MulticastPlayReloadSound_Validate();
+
+	UPROPERTY(Replicated)
+	float _bonusSpeedRate;
+
+	UPROPERTY(Replicated)
+	float _bonusDamageRate;
+
+	UPROPERTY(Replicated)
+	float _bonusLifeRate;
+
+	UFUNCTION(Reliable, Server, WithValidation)
+	void ServerApplyNewPower();
+	virtual void ServerApplyNewPower_Implementation();
+	virtual bool ServerApplyNewPower_Validate();
 
 	void DEBUGPROPERTIES();
 };

@@ -56,7 +56,7 @@ void ATemplateCharacter::BeginPlay()
 	_weapon->AttachToComponent(MeshThirdPerson, FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("WeaponSocket"));
 
 	_fireLength = _weapon->GetFireLength();
-	_damage = _weapon->GetDamage();
+	_damage = _weapon->GetDamage() * _bonusDamageRate;
 	//ServerInitWithWeapon(_weapon);
 }
 
@@ -177,6 +177,9 @@ void ATemplateCharacter::GetLifetimeReplicatedProps(TArray< FLifetimeProperty>& 
 	DOREPLIFETIME(ATemplateCharacter, _healthMax);
 	DOREPLIFETIME(ATemplateCharacter, _weapon);
 	DOREPLIFETIME(ATemplateCharacter, _wantToReload);
+	DOREPLIFETIME(ATemplateCharacter, _bonusSpeedRate);
+	DOREPLIFETIME(ATemplateCharacter, _bonusDamageRate);
+	DOREPLIFETIME(ATemplateCharacter, _bonusLifeRate);
 }
 
 int ATemplateCharacter::GetTeamNumber()
@@ -224,6 +227,10 @@ bool ATemplateCharacter::ClientShowVignette_Validate(bool newState)
 
 void ATemplateCharacter::Init()
 {
+	_bonusSpeedRate = 1.0f;
+	_bonusDamageRate = 1.0f;
+	_bonusLifeRate = 1.0f;
+
 	_healthMax = 100;
 	_health = _healthMax;
 	_damage = 10;
@@ -342,8 +349,7 @@ void ATemplateCharacter::Stopfire()
 
 void ATemplateCharacter::ServerFire_Implementation(FVector Start, FVector End)
 {
-
-	/*_weapon->*/MulticastPlayFireSound();
+	MulticastPlayFireSound();
 
 	FHitResult HitInfo;
 	FCollisionQueryParams QParams;
@@ -465,19 +471,19 @@ void ATemplateCharacter::ServerChangeSpeed_Implementation()
 	switch (_currentPlayerState)
 	{
 	case EPlayerState::walking:
-		GetCharacterMovement()->MaxWalkSpeed = _speedNormal;
+		GetCharacterMovement()->MaxWalkSpeed = _speedNormal * _bonusSpeedRate;
 		break;
 	case EPlayerState::Zooming :
-		GetCharacterMovement()->MaxWalkSpeed = _speedWalk;
+		GetCharacterMovement()->MaxWalkSpeed = _speedWalk * _bonusSpeedRate;
 		break;
 	case EPlayerState::Sprinting :
-		GetCharacterMovement()->MaxWalkSpeed = _speedSprint;
+		GetCharacterMovement()->MaxWalkSpeed = _speedSprint * _bonusSpeedRate;
 		break;
 	case EPlayerState::Crouching:
-		GetCharacterMovement()->MaxWalkSpeed = _speedCrouch;
+		GetCharacterMovement()->MaxWalkSpeed = _speedCrouch * _bonusSpeedRate;
 		break;
 	default:
-		GetCharacterMovement()->MaxWalkSpeed = _speedNormal;
+		GetCharacterMovement()->MaxWalkSpeed = _speedNormal * _bonusSpeedRate;
 		break;
 	}
 }
@@ -715,12 +721,6 @@ bool ATemplateCharacter::ServerChangeWantToReload_Validate(bool newState)
 	return true;
 }
 
-void ATemplateCharacter::DEBUGPROPERTIES()
-{
-	UE_LOG(LogTemp, Warning, TEXT("life DEBUG %d"), _health);
-
-}
-
 void ATemplateCharacter::MulticastPlayFireSound_Implementation()
 {
 	_weapon->PlayFireSound();
@@ -739,4 +739,64 @@ void ATemplateCharacter::MulticastPlayReloadSound_Implementation()
 bool ATemplateCharacter::MulticastPlayReloadSound_Validate()
 {
 	return true;
+}
+
+void ATemplateCharacter::ApplyNewPower()
+{
+	EPlayerPower lastPowerGet = EPlayerPower::None;
+	if (_playerState->GetPower3() != EPlayerPower::None)
+	{
+		lastPowerGet = _playerState->GetPower3();
+	}
+	else if (_playerState->GetPower2() != EPlayerPower::None)
+	{
+		lastPowerGet = _playerState->GetPower2();
+	}
+	else if (_playerState->GetPower1() != EPlayerPower::None)
+	{
+		lastPowerGet = _playerState->GetPower1();
+	}
+
+	switch (lastPowerGet)
+	{
+	case EPlayerPower::MarksMan:
+		_bonusDamageRate *= 2;
+		_damage *= 2;
+		break;
+	case EPlayerPower::Sprinter:
+		_bonusSpeedRate *= 2;
+		if (Role < ROLE_Authority)
+		{
+			ServerChangeSpeed();
+		}
+		break;
+	case EPlayerPower::Tank:
+		_bonusLifeRate *= 2;
+		_healthMax *= 2;
+		_health *= 2;
+		break;
+	default:
+		break;
+	}
+
+	if (Role < ROLE_Authority)
+	{
+		ServerApplyNewPower();
+	}
+}
+
+void ATemplateCharacter::ServerApplyNewPower_Implementation()
+{
+	ApplyNewPower();
+}
+
+bool ATemplateCharacter::ServerApplyNewPower_Validate()
+{
+	return true;
+}
+
+void ATemplateCharacter::DEBUGPROPERTIES()
+{
+	UE_LOG(LogTemp, Warning, TEXT("life DEBUG %d"), _health);
+
 }

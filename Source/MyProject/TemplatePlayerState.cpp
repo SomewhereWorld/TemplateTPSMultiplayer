@@ -11,6 +11,9 @@ ATemplatePlayerState::ATemplatePlayerState()
 	_kills = 0;
 	_assist = 0;
 	_playerTeamNumber = 0;
+	_playerPower = EPlayerPower::None;
+	_playerPower2 = EPlayerPower::None;
+	_playerPower3 = EPlayerPower::None;
 }
 
 void ATemplatePlayerState::GetLifetimeReplicatedProps(TArray< FLifetimeProperty>& OutLifetimeProps) const
@@ -23,6 +26,9 @@ void ATemplatePlayerState::GetLifetimeReplicatedProps(TArray< FLifetimeProperty>
 	DOREPLIFETIME(ATemplatePlayerState, _death);
 	DOREPLIFETIME(ATemplatePlayerState, _playerScore);
 	DOREPLIFETIME(ATemplatePlayerState, _playerTeamNumber);
+	DOREPLIFETIME(ATemplatePlayerState, _playerPower);
+	DOREPLIFETIME(ATemplatePlayerState, _playerPower2);
+	DOREPLIFETIME(ATemplatePlayerState, _playerPower3);
 }
 
 void ATemplatePlayerState::AddKill(int Amount)
@@ -81,4 +87,24 @@ int ATemplatePlayerState::GetPlayerTeamNumber()
 void ATemplatePlayerState::SetPlayerTeamNumber(int NewTeam)
 {
 	_playerTeamNumber = NewTeam;
+}
+
+void ATemplatePlayerState::SetPlayerPower(EPlayerPower NewPower)
+{
+	_playerPower = NewPower;
+}
+
+EPlayerPower ATemplatePlayerState::GetPower1()
+{
+	return _playerPower;
+}
+
+EPlayerPower ATemplatePlayerState::GetPower2()
+{
+	return _playerPower2;
+}
+
+EPlayerPower ATemplatePlayerState::GetPower3()
+{
+	return _playerPower3;
 }

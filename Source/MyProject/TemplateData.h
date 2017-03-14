@@ -2,7 +2,7 @@
 
 #include "TemplateData.generated.h"
 
-// the role of the player
+// the state of the player
 UENUM(BlueprintType)		//"BlueprintType" is essential to include
 enum class EPlayerState : uint8
 {
@@ -12,4 +12,14 @@ enum class EPlayerState : uint8
 	walking		UMETA(DisplayName = "walking"),
 	Zooming		UMETA(DisplayName = "Zooming"),
 	Crouching	UMETA(DisplayName = "Crouching"),
+};
+
+// the power of the player
+UENUM(BlueprintType)		//"BlueprintType" is essential to include
+enum class EPlayerPower : uint8
+{
+	None		UMETA(DisplayName = "None"),
+	Sprinter 	UMETA(DisplayName = "Sprinter"),
+	Tank 		UMETA(DisplayName = "Tank"),
+	MarksMan	UMETA(DisplayName = "DPS"),
 };

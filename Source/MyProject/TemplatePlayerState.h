@@ -3,6 +3,7 @@
 #pragma once
 
 #include "GameFramework/PlayerState.h"
+#include "TemplateData.h"
 #include "TemplatePlayerState.generated.h"
 
 /**
@@ -38,7 +39,17 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Template")
 	void SetPlayerTeamNumber(int NewTeam);
 
+	UFUNCTION(BlueprintCallable, Category = "Template")
+	void SetPlayerPower(EPlayerPower NewPower);
+
 	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps)const override;
+
+	UFUNCTION(BlueprintCallable, Category = "Template")
+	EPlayerPower GetPower1();
+	UFUNCTION(BlueprintCallable, Category = "Template")
+	EPlayerPower GetPower2();
+	UFUNCTION(BlueprintCallable, Category = "Template")
+	EPlayerPower GetPower3();
 
 protected:
 
@@ -59,4 +70,13 @@ protected:
 
 	UPROPERTY(Replicated)
 	int _playerTeamNumber;
+
+	UPROPERTY(Replicated)
+	EPlayerPower _playerPower;
+
+	UPROPERTY(Replicated)
+	EPlayerPower _playerPower2;
+
+	UPROPERTY(Replicated)
+	EPlayerPower _playerPower3;
 };
