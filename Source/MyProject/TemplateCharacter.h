@@ -27,6 +27,7 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* InputComponent) override;
 
+	UFUNCTION(BlueprintCallable, Category = "Template - Player")
 	ATemplatePlayerState* GetCastedPlayerState();
 
 	UFUNCTION(BlueprintCallable, Category = "Template - Player")

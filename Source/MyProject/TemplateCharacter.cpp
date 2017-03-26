@@ -46,7 +46,7 @@ void ATemplateCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	GetWorld()->GetTimerManager().SetTimer(_startTimerHandle, this, &ATemplateCharacter::GetPlayerStateAtStart, 0.5f, false);
+	GetWorld()->GetTimerManager().SetTimer(_startTimerHandle, this, &ATemplateCharacter::GetPlayerStateAtStart, 3.0f, false);
 
 	_currentPlayerState = EPlayerState::Idle;
 	_cameraStart = ThirdPersonCameraComponent->GetRelativeTransform().GetLocation();

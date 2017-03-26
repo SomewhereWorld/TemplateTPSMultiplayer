@@ -23,3 +23,13 @@ enum class EPlayerPower : uint8
 	Tank 		UMETA(DisplayName = "Tank"),
 	MarksMan	UMETA(DisplayName = "DPS"),
 };
+
+// the state of the client
+UENUM(BlueprintType)		//"BlueprintType" is essential to include
+enum class EclientState : uint8
+{
+	None		UMETA(DisplayName = "None"),
+	Alive 		UMETA(DisplayName = "Alive"),
+	Dead 		UMETA(DisplayName = "Dead"),
+	Stuck		UMETA(DisplayName = "Stuck"),
+};
