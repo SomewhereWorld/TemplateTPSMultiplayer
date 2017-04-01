@@ -27,6 +27,11 @@ public:
 	TArray<ATemplateRespawn*> _teamOneSpawn;
 	TArray<ATemplateRespawn*> _teamTwoSpawn;
 
+	void AddPlayerReady();
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Template - GameMode")
+	int nbPlayerNeeded;
+
 private:
 	void GetAllRespawn();
 
@@ -36,4 +41,6 @@ private:
 	int _indexRespawnTwo;
 
 	FTimerHandle _startTimerHandle;
+
+	int _nbPlayersReady;
 };

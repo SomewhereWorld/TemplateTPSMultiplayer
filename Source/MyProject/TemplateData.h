@@ -26,7 +26,7 @@ enum class EPlayerPower : uint8
 
 // the state of the client
 UENUM(BlueprintType)		//"BlueprintType" is essential to include
-enum class EclientState : uint8
+enum class EClientState : uint8
 {
 	None		UMETA(DisplayName = "None"),
 	Alive 		UMETA(DisplayName = "Alive"),

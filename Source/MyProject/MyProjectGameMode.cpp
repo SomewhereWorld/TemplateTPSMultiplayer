@@ -12,13 +12,16 @@ void AMyProjectGameMode::BeginPlay()
 	_indexRespawnTwo = 0;
 	GetAllRespawn();
 
+	_nbPlayersReady = 0;
+	nbPlayerNeeded = 6;
+
 	if(HasAuthority())
-		GetWorld()->GetTimerManager().SetTimer(_startTimerHandle, this, &AMyProjectGameMode::AffectTeams, 1.5f, false);
+		GetWorld()->GetTimerManager().SetTimer(_startTimerHandle, this, &AMyProjectGameMode::AffectTeams, 5.0f, false);
 }
 
 void AMyProjectGameMode::ServerRespawn_Implementation(ATemplateCharacter* character)
 {
-	if (character->GetTeamNumber() == 0)
+	/*if (character->GetTeamNumber() == 0)
 	{
 		character->SetActorLocation(_teamOneSpawn[_indexRespawnOne]->GetActorLocation());
 		_indexRespawnOne++;
@@ -35,7 +38,7 @@ void AMyProjectGameMode::ServerRespawn_Implementation(ATemplateCharacter* charac
 		{
 			_indexRespawnTwo = 0;
 		}
-	}
+	}*/
 }
 
 bool AMyProjectGameMode::ServerRespawn_Validate(ATemplateCharacter* character)
@@ -76,19 +79,51 @@ void AMyProjectGameMode::AffectTeams()
 		}
 	}
 
+	int indexP0 = 0;
+	int indexP1 = 0;
+
 	for (auto i = 0; i < allPlayerStates.Num(); i++)
 	{
 		if (i % 2 == 1)
 		{
-			if(allPlayerStates[i] != nullptr)
+			if (allPlayerStates[i] != nullptr)
+			{
 				allPlayerStates[i]->SetPlayerTeamNumber(1);
-			if(_teamOneSpawn[0])
-				allCharacters[i]->SetActorLocation(_teamOneSpawn[0]->GetActorLocation());
+				
+			}
+			if (_teamOneSpawn[indexP0])
+			{
+				allCharacters[i]->SetActorLocation(_teamOneSpawn[indexP0]->GetActorLocation());
+				indexP0++;
+			}
 		}
 		else
 		{
-			if (_teamTwoSpawn[0])
-				allCharacters[i]->SetActorLocation(_teamTwoSpawn[0]->GetActorLocation());
+			if (_teamTwoSpawn[indexP1])
+			{
+				allCharacters[i]->SetActorLocation(_teamTwoSpawn[indexP1]->GetActorLocation());
+				indexP1++;
+			}
+		}
+	}
+}
+
+void AMyProjectGameMode::AddPlayerReady()
+{
+	_nbPlayersReady++;
+	UE_LOG(LogTemp, Warning, TEXT("A PLAYER READY"));
+	if (_nbPlayersReady >= nbPlayerNeeded)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ALL PLAYERS READY"));
+		// All players are ready to start
+		for (TActorIterator<ATemplateCharacter> ActorItr(GetWorld()); ActorItr; ++ActorItr)
+		{
+			ATemplateCharacter* aPlayer = Cast<ATemplateCharacter>(*ActorItr);
+			if (aPlayer)
+			{
+				aPlayer->SetClientState(EClientState::Alive);
+				aPlayer->LaunchGame();
+			}
 		}
 	}
 }

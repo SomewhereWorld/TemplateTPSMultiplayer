@@ -135,9 +135,9 @@ void ATemplateCharacter::Tick( float DeltaTime )
 }
 
 // Called to bind functionality to input
-void ATemplateCharacter::SetupPlayerInputComponent(class UInputComponent* InputComponent)
+void ATemplateCharacter::SetupPlayerInputComponent(class UInputComponent* theInputComponent)
 {
-	Super::SetupPlayerInputComponent(InputComponent);
+	Super::SetupPlayerInputComponent(theInputComponent);
 
 	InputComponent->BindAxis("Forward", this, &ATemplateCharacter::MoveForward);
 	InputComponent->BindAxis("Right", this, &ATemplateCharacter::MoveRight);
@@ -180,6 +180,7 @@ void ATemplateCharacter::GetLifetimeReplicatedProps(TArray< FLifetimeProperty>& 
 	DOREPLIFETIME(ATemplateCharacter, _bonusSpeedRate);
 	DOREPLIFETIME(ATemplateCharacter, _bonusDamageRate);
 	DOREPLIFETIME(ATemplateCharacter, _bonusLifeRate);
+	DOREPLIFETIME(ATemplateCharacter, _currentClientState);
 }
 
 int ATemplateCharacter::GetTeamNumber()
@@ -252,10 +253,16 @@ void ATemplateCharacter::Init()
 	_regenSpeed = 0.1f;
 	_wantToFire = false;
 	_wantToReload = false;
+
+	_phase = 1;
+
+	_currentPlayerState = EPlayerState::Idle;
+	_currentClientState = EClientState::Stuck;
 }
 
 void ATemplateCharacter::MoveForward(float Amount)
 {
+	if (_currentClientState != EClientState::Alive) return;
 	if (Controller != NULL && Amount != 0.0f)
 	{
 		if (_currentPlayerState == EPlayerState::Idle || _currentPlayerState == EPlayerState::None)
@@ -277,6 +284,7 @@ void ATemplateCharacter::MoveForward(float Amount)
 
 void ATemplateCharacter::MoveRight(float Amount)
 {
+	if (_currentClientState != EClientState::Alive) return;
 	if (Controller != NULL && Amount != 0.0f)
 	{
 		if (_currentPlayerState == EPlayerState::Idle || _currentPlayerState == EPlayerState::None)
@@ -294,6 +302,7 @@ void ATemplateCharacter::MoveRight(float Amount)
 
 void ATemplateCharacter::TurnAround(float Amount)
 {
+	if (_currentClientState != EClientState::Alive) return;
 	SpringArm->AddWorldRotation(FRotator(0.0f, Amount * _horizontalAcceleration, 0.0f));
 	if (_zoomed)
 	{
@@ -304,6 +313,7 @@ void ATemplateCharacter::TurnAround(float Amount)
 
 void ATemplateCharacter::LookUp(float Amount)
 {
+	if (_currentClientState != EClientState::Alive) return;
 	if (_verticalLook + (Amount * _verticalAcceleration) <= 89.0f && _verticalLook + (Amount * _verticalAcceleration) >= -89.0f)
 	{
 		_verticalLook += Amount * _verticalAcceleration;
@@ -336,6 +346,7 @@ bool ATemplateCharacter::MulticastChangeMeshRotation_Validate(const FRotator& ro
 
 void ATemplateCharacter::Fire()
 {
+	if (_currentClientState != EClientState::Alive) return;
 	if (Role < ROLE_Authority)
 	{
 		_wantToFire = true;
@@ -344,6 +355,7 @@ void ATemplateCharacter::Fire()
 
 void ATemplateCharacter::Stopfire()
 {
+	if (_currentClientState != EClientState::Alive) return;
 	_wantToFire = false;
 }
 
@@ -376,8 +388,10 @@ bool ATemplateCharacter::ServerFire_Validate(FVector Start, FVector End)
 	return true;
 }
 
+// executed on the server
 void ATemplateCharacter::ReceiveDamage(int Amount, ATemplateCharacter* sender)
 {
+	if (_currentClientState != EClientState::Alive) return;
 	_health -= Amount;
 	_currentTimeToRegen = 0;
 
@@ -389,6 +403,8 @@ void ATemplateCharacter::ReceiveDamage(int Amount, ATemplateCharacter* sender)
 	if (_health <= 0)
 	{
 		_health = 0;
+
+		_currentClientState = EClientState::Dead;
 
 		if (sender && sender->GetCastedPlayerState())
 		{
@@ -409,7 +425,9 @@ void ATemplateCharacter::ReceiveDamage(int Amount, ATemplateCharacter* sender)
 
 		_allDamageSenders.Empty();
 
-		Respawn();
+
+
+		//Respawn();
 	}
 	else if (_health <= _limitVignette)
 	{
@@ -424,22 +442,26 @@ void ATemplateCharacter::ReceiveDamage(int Amount, ATemplateCharacter* sender)
 
 void ATemplateCharacter::OnStartJump()
 {
+	if (_currentClientState != EClientState::Alive) return;
 	bPressedJump = true;
 }
 
 void ATemplateCharacter::OnStopJump()
 {
+	if (_currentClientState != EClientState::Alive) return;
 	bPressedJump = false;
 }
 
 void ATemplateCharacter::ShowScores()
 {
+	if (_currentClientState != EClientState::Alive) return;
 	ShowingScore = true;
 	RefreshScores();
 }
 
 void ATemplateCharacter::StopShowScores()
 {
+	if (_currentClientState != EClientState::Alive) return;
 	ShowingScore = false;
 	HideScores();
 }
@@ -468,6 +490,7 @@ bool ATemplateCharacter::ServerResetStats_Validate()
 
 void ATemplateCharacter::ServerChangeSpeed_Implementation()
 {
+	if (_currentClientState != EClientState::Alive) return;
 	switch (_currentPlayerState)
 	{
 	case EPlayerState::walking:
@@ -524,6 +547,7 @@ void ATemplateCharacter::GetPlayerStateAtStart()
 
 void ATemplateCharacter::Zoom()
 {
+	if (_currentClientState != EClientState::Alive) return;
 	if (_currentPlayerState != EPlayerState::Zooming)
 	{
 		_currentPlayerState = EPlayerState::Zooming;
@@ -548,6 +572,7 @@ void ATemplateCharacter::Zoom()
 
 void ATemplateCharacter::UnZoom()
 {
+	if (_currentClientState != EClientState::Alive) return;
 	if (_currentPlayerState == EPlayerState::Zooming)
 	{
 		_currentPlayerState = EPlayerState::Idle;
@@ -572,6 +597,7 @@ bool ATemplateCharacter::ServerIsZoomed_Validate(bool newState)
 
 void ATemplateCharacter::Sprint()
 {
+	if (_currentClientState != EClientState::Alive) return;
 	if (!_zoomed)
 	{
 		if (_currentPlayerState != EPlayerState::Sprinting)
@@ -587,6 +613,7 @@ void ATemplateCharacter::Sprint()
 
 void ATemplateCharacter::StopSprint()
 {
+	if (_currentClientState != EClientState::Alive) return;
 	if (_isSprinting)
 	{
 		if (_currentPlayerState == EPlayerState::Sprinting)
@@ -622,6 +649,7 @@ bool ATemplateCharacter::ServerIsReloading_Validate(bool newState)
 
 void ATemplateCharacter::CrouchPlayer()
 {
+	if (_currentClientState != EClientState::Alive) return;
 	if (_currentPlayerState != EPlayerState::Crouching)
 	{
 		_currentPlayerState = EPlayerState::Crouching;
@@ -634,6 +662,7 @@ void ATemplateCharacter::CrouchPlayer()
 
 void ATemplateCharacter::UnCrouchPlayer()
 {
+	if (_currentClientState != EClientState::Alive) return;
 	if (_currentPlayerState == EPlayerState::Crouching)
 	{
 		_currentPlayerState = EPlayerState::Idle;
@@ -687,12 +716,14 @@ bool ATemplateCharacter::ServerInitWithWeapon_Validate(ATemplateWeapon* theWeapo
 
 void ATemplateCharacter::Reload()
 {
+	if (_currentClientState != EClientState::Alive) return;
 	_weapon->Reload();
 	ServerChangeWantToReload(true);
 }
 
 void ATemplateCharacter::EndReload()
 {
+	if (_currentClientState != EClientState::Alive) return;
 	if (HasAuthority())
 	{
 		ClientEndReload();
@@ -746,14 +777,17 @@ void ATemplateCharacter::ApplyNewPower()
 	EPlayerPower lastPowerGet = EPlayerPower::None;
 	if (_playerState->GetPower3() != EPlayerPower::None)
 	{
+		_phase = 3;
 		lastPowerGet = _playerState->GetPower3();
 	}
 	else if (_playerState->GetPower2() != EPlayerPower::None)
 	{
+		_phase = 2;
 		lastPowerGet = _playerState->GetPower2();
 	}
 	else if (_playerState->GetPower1() != EPlayerPower::None)
 	{
+		_phase = 1;
 		lastPowerGet = _playerState->GetPower1();
 	}
 
@@ -795,8 +829,45 @@ bool ATemplateCharacter::ServerApplyNewPower_Validate()
 	return true;
 }
 
+void ATemplateCharacter::ChangePlayerPower(int phase, EPlayerPower newPower)
+{
+	ServerChangePower(phase, newPower);
+}
+
+void ATemplateCharacter::ServerChangePower_Implementation(int phase, EPlayerPower newPower)
+{
+	_playerState->SetPlayerPower(phase, newPower);
+	ApplyNewPower();
+	auto currentGameMode = Cast<AMyProjectGameMode>(GetWorld()->GetAuthGameMode());
+	if(currentGameMode)
+		currentGameMode->AddPlayerReady();
+}
+
+bool ATemplateCharacter::ServerChangePower_Validate(int phase, EPlayerPower newPower)
+{
+	return true;
+}
+
 void ATemplateCharacter::DEBUGPROPERTIES()
 {
 	UE_LOG(LogTemp, Warning, TEXT("life DEBUG %d"), _health);
 
+}
+
+void ATemplateCharacter::SetClientState(EClientState newState)
+{
+	_currentClientState = newState;
+}
+
+void ATemplateCharacter::DistruteOurPower()
+{
+	// Get all the friendly players
+	for (TActorIterator<ATemplateCharacter> ActorItr(GetWorld()); ActorItr; ++ActorItr)
+	{
+		ATemplateCharacter* aPlayer = Cast<ATemplateCharacter>(*ActorItr);
+		if (aPlayer && aPlayer != this && aPlayer->_playerState != nullptr && aPlayer->_playerState->GetPlayerTeamNumber() == _playerState->GetPlayerTeamNumber())
+		{
+			aPlayer->_playerState->SetPlayerPower(_phase + 1, aPlayer->_playerState->GetPower1());
+		}
+	}
 }

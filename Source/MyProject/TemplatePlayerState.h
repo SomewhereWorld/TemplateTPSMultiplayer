@@ -40,7 +40,7 @@ public:
 	void SetPlayerTeamNumber(int NewTeam);
 
 	UFUNCTION(BlueprintCallable, Category = "Template")
-	void SetPlayerPower(EPlayerPower NewPower);
+	void SetPlayerPower(int phase, EPlayerPower NewPower);
 
 	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps)const override;
 

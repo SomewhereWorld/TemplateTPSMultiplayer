@@ -11,20 +11,20 @@ Features Done :
   - Weapons Sounds
   - Basic Movement
   - Shoot
+  - Power
+  - Power selection  
+  - Team
 
 Features in progress :
 
-  - Team
+  - Victory / Defeat
   - Basic map
-  - Power
 
 Features incoming in the project :
 
-  - Power choosing
   - Lobby 
   - Customization
   - More Sounds
-  - Victory / Defeat
   - Feedbacks
   - More Weapons
   - (grappling ?)

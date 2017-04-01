@@ -89,9 +89,14 @@ void ATemplatePlayerState::SetPlayerTeamNumber(int NewTeam)
 	_playerTeamNumber = NewTeam;
 }
 
-void ATemplatePlayerState::SetPlayerPower(EPlayerPower NewPower)
+void ATemplatePlayerState::SetPlayerPower(int phase, EPlayerPower NewPower)
 {
-	_playerPower = NewPower;
+	if(phase == 1)
+		_playerPower = NewPower;
+	else if (phase == 2)
+		_playerPower2 = NewPower;
+	else if (phase == 3)
+		_playerPower3 = NewPower;
 }
 
 EPlayerPower ATemplatePlayerState::GetPower1()

@@ -44,6 +44,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Template - Player")
 	void EndReload();
 
+	UFUNCTION(BlueprintCallable, Category = "Template - Player")
+	void ChangePlayerPower(int phase, EPlayerPower newPower);
+
+	void SetClientState(EClientState newState);
+
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Template - Player")
+	void LaunchGame();
+
+
 protected:
 
 	// ****variables****
@@ -95,6 +104,9 @@ protected:
 
 	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Template - Player")
 	EPlayerState _currentPlayerState;
+
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Template - Player")
+	EClientState _currentClientState;
 
 	// where the player is looking at vertically
 	UPROPERTY(Replicated, EditAnywhere, BlueprintReadOnly, Category = "Template - Player")
@@ -153,6 +165,16 @@ protected:
 
 	UFUNCTION(BlueprintCallable, Category = "Template - Player")
 	void ApplyNewPower();
+
+	// Set the new power for the player
+	UFUNCTION(Reliable, Server, WithValidation)
+	void ServerChangePower(int phase, EPlayerPower newPower);
+	virtual void ServerChangePower_Implementation(int phase, EPlayerPower newPower);
+	virtual bool ServerChangePower_Validate(int phase, EPlayerPower newPower);
+
+	// Refresh the power on the player HUD
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Template - Player")
+	void RefreshPowerOnHUD();
 
 private:
 
@@ -258,6 +280,9 @@ private:
 	TArray<ATemplateCharacter*> _allDamageSenders;
 
 	void Respawn();
+
+	// current phase (when a friend die, phase += 1)
+	int _phase;
 
 	/** ZOOM **/
 
@@ -367,6 +392,8 @@ private:
 	void ServerApplyNewPower();
 	virtual void ServerApplyNewPower_Implementation();
 	virtual bool ServerApplyNewPower_Validate();
+
+	void DistruteOurPower();
 
 	void DEBUGPROPERTIES();
 };
