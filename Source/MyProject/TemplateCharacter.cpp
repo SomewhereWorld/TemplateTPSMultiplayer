@@ -425,7 +425,19 @@ void ATemplateCharacter::ReceiveDamage(int Amount, ATemplateCharacter* sender)
 
 		_allDamageSenders.Empty();
 
-
+		if (!_currentGameMode)
+		{
+			for (TActorIterator<AMyProjectGameMode> ActorItr(GetWorld()); ActorItr; ++ActorItr)
+			{
+				AMyProjectGameMode* gameMode = Cast<AMyProjectGameMode>(*ActorItr);
+				if (gameMode)
+				{
+					_currentGameMode = gameMode;
+					break;
+				}
+			}
+		}
+		_currentGameMode->PlayerDie(this);
 
 		//Respawn();
 	}
@@ -471,6 +483,7 @@ void ATemplateCharacter::ResetStats()
 	if (Role == ROLE_Authority)
 	{
 		_health = 100;
+		_currentClientState = EClientState::Alive;
 	}
 	else if (Role < ROLE_Authority)
 	{
@@ -530,14 +543,19 @@ void ATemplateCharacter::Respawn()
 {
 	ResetStats();
 	ClientShowVignette(false);
-	for (TActorIterator<AMyProjectGameMode> ActorItr(GetWorld()); ActorItr; ++ActorItr)
+	if (!_currentGameMode)
 	{
-		AMyProjectGameMode* gameMode = Cast<AMyProjectGameMode>(*ActorItr);
-		if (gameMode)
+		for (TActorIterator<AMyProjectGameMode> ActorItr(GetWorld()); ActorItr; ++ActorItr)
 		{
-			gameMode->ServerRespawn(this);
+			AMyProjectGameMode* gameMode = Cast<AMyProjectGameMode>(*ActorItr);
+			if (gameMode)
+			{
+				_currentGameMode = gameMode;
+				break;
+			}
 		}
 	}
+	_currentGameMode->ServerRespawnPlayer(this);
 }
 
 void ATemplateCharacter::GetPlayerStateAtStart()
@@ -717,6 +735,8 @@ bool ATemplateCharacter::ServerInitWithWeapon_Validate(ATemplateWeapon* theWeapo
 void ATemplateCharacter::Reload()
 {
 	if (_currentClientState != EClientState::Alive) return;
+	if (!_weapon->MustReload()) return;
+
 	_weapon->Reload();
 	ServerChangeWantToReload(true);
 }

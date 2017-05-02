@@ -16,32 +16,30 @@ void AMyProjectGameMode::BeginPlay()
 	nbPlayerNeeded = 6;
 
 	if(HasAuthority())
-		GetWorld()->GetTimerManager().SetTimer(_startTimerHandle, this, &AMyProjectGameMode::AffectTeams, 5.0f, false);
+		GetWorld()->GetTimerManager().SetTimer(_startTimerHandle, this, &AMyProjectGameMode::StartGame, 5.0f, false);
 }
 
-void AMyProjectGameMode::ServerRespawn_Implementation(ATemplateCharacter* character)
+void AMyProjectGameMode::StartGame()
 {
-	/*if (character->GetTeamNumber() == 0)
-	{
-		character->SetActorLocation(_teamOneSpawn[_indexRespawnOne]->GetActorLocation());
-		_indexRespawnOne++;
-		if (_indexRespawnOne >= _teamOneSpawn.Num())
-		{
-			_indexRespawnOne = 0;
-		}
-	}
-	else if (character->GetTeamNumber() == 1)
-	{
-		character->SetActorLocation(_teamTwoSpawn[_indexRespawnTwo]->GetActorLocation());
-		_indexRespawnTwo++;
-		if (_indexRespawnTwo >= _teamTwoSpawn.Num())
-		{
-			_indexRespawnTwo = 0;
-		}
-	}*/
+	AffectTeams();
+	Respawn();
 }
 
-bool AMyProjectGameMode::ServerRespawn_Validate(ATemplateCharacter* character)
+void AMyProjectGameMode::ServerRespawnPlayer_Implementation(ATemplateCharacter* character)
+{
+	if (character->GetTeamNumber() == 0)
+	{
+		int index = FMath::RandRange(0, _teamOneSpawn.Num() - 1);
+		character->SetActorLocation(_teamOneSpawn[index]->GetActorLocation());
+	}
+	else
+	{
+		int index = FMath::RandRange(0, _teamTwoSpawn.Num() - 1);
+		character->SetActorLocation(_teamTwoSpawn[index]->GetActorLocation());
+	}
+}
+
+bool AMyProjectGameMode::ServerRespawnPlayer_Validate(ATemplateCharacter* character)
 {
 	return true;
 }
@@ -79,9 +77,6 @@ void AMyProjectGameMode::AffectTeams()
 		}
 	}
 
-	int indexP0 = 0;
-	int indexP1 = 0;
-
 	for (auto i = 0; i < allPlayerStates.Num(); i++)
 	{
 		if (i % 2 == 1)
@@ -91,18 +86,103 @@ void AMyProjectGameMode::AffectTeams()
 				allPlayerStates[i]->SetPlayerTeamNumber(1);
 				
 			}
-			if (_teamOneSpawn[indexP0])
-			{
-				allCharacters[i]->SetActorLocation(_teamOneSpawn[indexP0]->GetActorLocation());
-				indexP0++;
-			}
+			_teamOnePlayers.Add(allCharacters[i]);
 		}
 		else
 		{
-			if (_teamTwoSpawn[indexP1])
+			_teamTwoPlayers.Add(allCharacters[i]);
+		}
+	}
+}
+
+void AMyProjectGameMode::PlayerDie(ATemplateCharacter* thePlayer)
+{
+	if (thePlayer->GetTeamNumber() == 0)
+	{
+		_teamOneAlivePlayers.Remove(thePlayer);
+		if (_teamOneAlivePlayers.Num() <= 0)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("TEAM TWO WIN"));
+			for (auto i = 0; i < _teamOnePlayers.Num(); i++)
 			{
-				allCharacters[i]->SetActorLocation(_teamTwoSpawn[indexP1]->GetActorLocation());
-				indexP1++;
+				_teamOnePlayers[i]->ShowWinningTeam(1);
+			}
+			for (auto i = 0; i < _teamTwoPlayers.Num(); i++)
+			{
+				_teamTwoPlayers[i]->ShowWinningTeam(1);
+			}
+			GetWorld()->GetTimerManager().SetTimer(_startTimerHandle, this, &AMyProjectGameMode::Respawn, 5.0f, false);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("_teamOneAlivePlayers %i"), _teamOneAlivePlayers.Num());
+		}
+	}
+	else
+	{
+		_teamTwoAlivePlayers.Remove(thePlayer);
+		if (_teamTwoAlivePlayers.Num() <= 0)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("TEAM ONE WIN"));
+			for (auto i = 0; i < _teamOnePlayers.Num(); i++)
+			{
+				_teamOnePlayers[i]->ShowWinningTeam(0);
+			}
+			for (auto i = 0; i < _teamTwoPlayers.Num(); i++)
+			{
+				_teamTwoPlayers[i]->ShowWinningTeam(0);
+			}
+			GetWorld()->GetTimerManager().SetTimer(_startTimerHandle, this, &AMyProjectGameMode::Respawn, 5.0f, false);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("_teamTwoAlivePlayers %i"), _teamTwoAlivePlayers.Num());
+		}
+	}
+}
+
+void AMyProjectGameMode::Respawn()
+{
+	for (auto i = 0; i < _teamOnePlayers.Num(); i++)
+	{
+		if (_teamOnePlayers[i] && _teamOneSpawn[i])
+		{
+			_teamOnePlayers[i]->CleanWidgetWinningTeam();
+			_teamOnePlayers[i]->ResetStats();
+			_teamOnePlayers[i]->SetActorLocation(_teamOneSpawn[i]->GetActorLocation());
+			_teamOneAlivePlayers.Add(_teamOnePlayers[i]);
+		}
+		else
+		{
+			if (!_teamOnePlayers[i])
+			{
+				UE_LOG(LogTemp, Warning, TEXT("_teamOnePlayers %i"), i);
+			}
+			if (!_teamOneSpawn[i])
+			{
+				UE_LOG(LogTemp, Warning, TEXT("_teamOneSpawn %i"), i);
+			}
+		}
+	}
+
+	for (auto i = 0; i < _teamTwoPlayers.Num(); i++)
+	{
+		if (_teamTwoPlayers[i] && _teamOneSpawn[i])
+		{
+			_teamTwoPlayers[i]->CleanWidgetWinningTeam();
+			_teamTwoPlayers[i]->ResetStats();
+			_teamTwoPlayers[i]->SetActorLocation(_teamTwoSpawn[i]->GetActorLocation());
+			_teamTwoAlivePlayers.Add(_teamTwoPlayers[i]);
+		}
+		else
+		{
+			if (!_teamTwoPlayers[i])
+			{
+				UE_LOG(LogTemp, Warning, TEXT("_teamTwoPlayers %i"), i);
+			}
+			if (!_teamTwoSpawn[i])
+			{
+				UE_LOG(LogTemp, Warning, TEXT("_teamTwoSpawn %i"), i);
 			}
 		}
 	}

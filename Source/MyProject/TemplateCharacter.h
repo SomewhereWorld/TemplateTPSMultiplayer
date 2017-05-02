@@ -8,6 +8,7 @@
 
 class ATemplatePlayerState;
 class ATemplateWeapon;
+class AMyProjectGameMode;
 
 UCLASS()
 class MYPROJECT_API ATemplateCharacter : public ACharacter
@@ -52,6 +53,14 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Template - Player")
 	void LaunchGame();
 
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Template - Player")
+	void ShowWinningTeam(int teamNumber);
+
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Template - Player")
+	void CleanWidgetWinningTeam();
+
+	// Reset Stats of the player
+	void ResetStats();
 
 protected:
 
@@ -229,9 +238,6 @@ private:
 	// Stop Show scores
 	void StopShowScores();
 
-	// Reset Stats of the player
-	void ResetStats();
-
 	// Reset Stats of the player (server side)
 	UFUNCTION(Reliable, Server, WithValidation)
 	void ServerResetStats();
@@ -394,6 +400,8 @@ private:
 	virtual bool ServerApplyNewPower_Validate();
 
 	void DistruteOurPower();
+
+	AMyProjectGameMode* _currentGameMode;
 
 	void DEBUGPROPERTIES();
 };

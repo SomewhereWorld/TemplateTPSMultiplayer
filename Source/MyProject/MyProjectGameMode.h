@@ -20,22 +20,34 @@ public:
 	virtual void BeginPlay() override;
 
 	UFUNCTION(Reliable, Server, WithValidation)
-	void ServerRespawn(ATemplateCharacter* character);
-	virtual void ServerRespawn_Implementation(ATemplateCharacter* character);
-	virtual bool ServerRespawn_Validate(ATemplateCharacter* character);
+	void ServerRespawnPlayer(ATemplateCharacter* character);
+	virtual void ServerRespawnPlayer_Implementation(ATemplateCharacter* character);
+	virtual bool ServerRespawnPlayer_Validate(ATemplateCharacter* character);
 	
 	TArray<ATemplateRespawn*> _teamOneSpawn;
 	TArray<ATemplateRespawn*> _teamTwoSpawn;
 
+	TArray<ATemplateCharacter*> _teamOnePlayers;
+	TArray<ATemplateCharacter*> _teamTwoPlayers;
+
+	TArray<ATemplateCharacter*> _teamOneAlivePlayers;
+	TArray<ATemplateCharacter*> _teamTwoAlivePlayers;
+
 	void AddPlayerReady();
+
+	void Respawn();
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Template - GameMode")
 	int nbPlayerNeeded;
+
+	void PlayerDie(ATemplateCharacter* thePlayer);
 
 private:
 	void GetAllRespawn();
 
 	void AffectTeams();
+
+	void StartGame();
 	
 	int _indexRespawnOne;
 	int _indexRespawnTwo;

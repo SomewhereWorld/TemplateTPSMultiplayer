@@ -17,11 +17,12 @@ Features Done :
 
 Features in progress :
 
-  - Victory / Defeat
+  - Victory / Defeat (nearly ok)
   - Basic map
 
 Features incoming in the project :
 
+  - Give Power
   - Lobby 
   - Customization
   - More Sounds
