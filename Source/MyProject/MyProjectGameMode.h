@@ -51,6 +51,8 @@ private:
 	
 	void LaunchGame();
 
+	void GivePower(ATemplateCharacter* thePlayer, int teamNumber);
+
 	int _indexRespawnOne;
 	int _indexRespawnTwo;
 

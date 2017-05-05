@@ -83,11 +83,9 @@ void AMyProjectGameMode::AffectTeams()
 	{
 		if (i % 2 == 1)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("SETTING TEAM ONE"));
 			if (allPlayerStates[i] != nullptr)
 			{
 				allPlayerStates[i]->SetPlayerTeamNumber(1);
-				UE_LOG(LogTemp, Warning, TEXT("SET !"));
 			}
 			_teamOnePlayers.Add(allCharacters[i]);
 		}
@@ -98,11 +96,14 @@ void AMyProjectGameMode::AffectTeams()
 	}
 }
 
+// executed on the server
 void AMyProjectGameMode::PlayerDie(ATemplateCharacter* thePlayer)
 {
 	if (thePlayer->GetCastedPlayerState()->GetPlayerTeamNumber() == 1)
 	{
+
 		_teamOneAlivePlayers.Remove(thePlayer);
+
 		if (_teamOneAlivePlayers.Num() <= 0)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("TEAM TWO WIN"));
@@ -116,10 +117,17 @@ void AMyProjectGameMode::PlayerDie(ATemplateCharacter* thePlayer)
 			}
 			GetWorld()->GetTimerManager().SetTimer(_startTimerHandle, this, &AMyProjectGameMode::Respawn, 5.0f, false);
 		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Give My Power !"));
+			GivePower(thePlayer, 1);
+		}
 	}
 	else
 	{
+
 		_teamTwoAlivePlayers.Remove(thePlayer);
+
 		if (_teamTwoAlivePlayers.Num() <= 0)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("TEAM ONE WIN"));
@@ -132,6 +140,48 @@ void AMyProjectGameMode::PlayerDie(ATemplateCharacter* thePlayer)
 				_teamTwoPlayers[i]->ShowWinningTeam(0);
 			}
 			GetWorld()->GetTimerManager().SetTimer(_startTimerHandle, this, &AMyProjectGameMode::Respawn, 5.0f, false);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Give My Power !"));
+			GivePower(thePlayer, 0);
+		}
+	}
+}
+
+void AMyProjectGameMode::GivePower(ATemplateCharacter* thePlayer, int teamNumber)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Giving power for team %i"), teamNumber);
+	if (teamNumber == 1)
+	{
+		for (auto i = 0; i < _teamOneAlivePlayers.Num(); i++)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Receiving power for team 1"));
+			if (_teamOneAlivePlayers.Num() == 2)
+				_teamOneAlivePlayers[i]->ChangePlayerPower(2, thePlayer->GetCastedPlayerState()->GetPower1());
+			else if (_teamOneAlivePlayers.Num() == 1)
+				_teamOneAlivePlayers[i]->ChangePlayerPower(3, thePlayer->GetCastedPlayerState()->GetPower1());
+
+			_teamOneAlivePlayers[i]->DelayedRefreshPowerHUD();
+		}
+	}
+	else
+	{
+		for (auto i = 0; i < _teamTwoAlivePlayers.Num(); i++)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Receiving power for team 0"));
+			if (_teamTwoAlivePlayers.Num() == 2)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("_teamTwoAlivePlayers.Num() == 2"));
+				_teamTwoAlivePlayers[i]->ChangePlayerPower(2, thePlayer->GetCastedPlayerState()->GetPower1());
+			}
+			else if (_teamTwoAlivePlayers.Num() == 1)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("_teamTwoAlivePlayers.Num() == 1"));
+				_teamTwoAlivePlayers[i]->ChangePlayerPower(3, thePlayer->GetCastedPlayerState()->GetPower1());
+			}
+
+			_teamTwoAlivePlayers[i]->DelayedRefreshPowerHUD();
 		}
 	}
 }

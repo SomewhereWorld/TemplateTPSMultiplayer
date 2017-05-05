@@ -93,6 +93,8 @@ void ATemplateCharacter::Tick( float DeltaTime )
 
 	if (HasAuthority())
 	{
+		if (_currentClientState != EClientState::Alive) return;
+
 		if (_health < _healthMax)
 		{
 			_currentTimeToRegen += DeltaTime;
@@ -102,7 +104,6 @@ void ATemplateCharacter::Tick( float DeltaTime )
 				if (_currentRegen >= _regenSpeed)
 				{
 					_currentRegen = 0;
-					//ServerChangeLife(1);
 					_health += 1;
 					if (_health > _limitVignette)
 					{
@@ -227,6 +228,17 @@ void ATemplateCharacter::ClientResetWeapon_Implementation()
 }
 
 bool ATemplateCharacter::ClientResetWeapon_Validate()
+{
+	return true;
+}
+
+void ATemplateCharacter::ClientRefreshPowerHUD_Implementation()
+{
+	UE_LOG(LogTemp, Warning, TEXT("REFRESH!"));
+	RefreshPowerOnHUD();
+}
+
+bool ATemplateCharacter::ClientRefreshPowerHUD_Validate()
 {
 	return true;
 }
@@ -856,18 +868,30 @@ bool ATemplateCharacter::ServerApplyNewPower_Validate()
 	return true;
 }
 
+void ATemplateCharacter::DelayedRefreshPowerHUD()
+{
+	GetWorld()->GetTimerManager().SetTimer(_startTimerHandle, this, &ATemplateCharacter::ClientRefreshPowerHUD, 1.0f, false);
+}
+
 void ATemplateCharacter::ChangePlayerPower(int phase, EPlayerPower newPower)
 {
-	ServerChangePower(phase, newPower);
+	if (Role < ROLE_Authority)
+	{
+		ServerChangePower(phase, newPower);
+	}
+	else
+	{
+		_playerState->SetPlayerPower(phase, newPower);
+		ApplyNewPower();
+		auto currentGameMode = Cast<AMyProjectGameMode>(GetWorld()->GetAuthGameMode());
+		if (currentGameMode && phase == 1)
+			currentGameMode->AddPlayerReady();
+	}
 }
 
 void ATemplateCharacter::ServerChangePower_Implementation(int phase, EPlayerPower newPower)
 {
-	_playerState->SetPlayerPower(phase, newPower);
-	ApplyNewPower();
-	auto currentGameMode = Cast<AMyProjectGameMode>(GetWorld()->GetAuthGameMode());
-	if(currentGameMode && phase == 1)
-		currentGameMode->AddPlayerReady();
+	ChangePlayerPower(phase, newPower);
 }
 
 bool ATemplateCharacter::ServerChangePower_Validate(int phase, EPlayerPower newPower)

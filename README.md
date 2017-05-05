@@ -1,6 +1,7 @@
 # TemplateTPSMultiplayer : Legacy
 
-Legacy is an Unreal Engine 4 project (4.13). It's a template made by Antoine Gargasson for those who desire to make "Third Person" games like The division. It's a 3v3 game where everyone choose a power that he will give to his team when he dies.
+Legacy is an Unreal Engine 4 project (4.13). It's a template made by Antoine Gargasson for those who desire to make "Third Person" games
+like The division. It's a 3v3 game where everyone choose a power that he will give to his team when he dies.
 
 Features Done :
 
@@ -15,11 +16,11 @@ Features Done :
   - Power selection  
   - Team
   - Victory / Defeat
+  - Give Power
 
 Features in progress :
 
   - Basic map
-  - Give Power
   - End Game
 
 Features incoming in the project :

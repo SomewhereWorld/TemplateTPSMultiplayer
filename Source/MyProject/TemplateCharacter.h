@@ -65,11 +65,19 @@ public:
 	virtual void ClientShowVignette_Implementation(bool newState);
 	virtual bool ClientShowVignette_Validate(bool newState);
 
-	// Show or not the hurt vignette to the player
+	// Reset the weapon on the player because he's owning his weapon and it's stats
 	UFUNCTION(Reliable, Client, WithValidation)
 	void ClientResetWeapon();
 	virtual void ClientResetWeapon_Implementation();
 	virtual bool ClientResetWeapon_Validate();
+
+	// Refresh the power HUD from the server
+	UFUNCTION(Reliable, Client, WithValidation)
+	void ClientRefreshPowerHUD();
+	virtual void ClientRefreshPowerHUD_Implementation();
+	virtual bool ClientRefreshPowerHUD_Validate();
+
+	void DelayedRefreshPowerHUD();
 
 protected:
 
