@@ -32,9 +32,6 @@ public:
 	ATemplatePlayerState* GetCastedPlayerState();
 
 	UFUNCTION(BlueprintCallable, Category = "Template - Player")
-	int GetTeamNumber();
-
-	UFUNCTION(BlueprintCallable, Category = "Template - Player")
 	int GetHealth();
 	UFUNCTION(BlueprintCallable, Category = "Template - Player")
 	int GetMaxHealth();
@@ -62,14 +59,23 @@ public:
 	// Reset Stats of the player
 	void ResetStats();
 
+	// Show or not the hurt vignette to the player
+	UFUNCTION(Reliable, Client, WithValidation)
+	void ClientShowVignette(bool newState);
+	virtual void ClientShowVignette_Implementation(bool newState);
+	virtual bool ClientShowVignette_Validate(bool newState);
+
+	// Show or not the hurt vignette to the player
+	UFUNCTION(Reliable, Client, WithValidation)
+	void ClientResetWeapon();
+	virtual void ClientResetWeapon_Implementation();
+	virtual bool ClientResetWeapon_Validate();
+
 protected:
 
 	// ****variables****
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Template - Player")
 	float _fireLength;
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Template - Player")
-	int _teamNumber;
 
 	// Showing score
 	UPROPERTY(BlueprintReadOnly, Category = "Template - Score")
@@ -165,12 +171,6 @@ protected:
 	// Close the score tab
 	UFUNCTION(BlueprintImplementableEvent)
 	void HideScores();
-
-	// Show or not the hurt vignette to the player
-	UFUNCTION(Reliable, Client, WithValidation)
-	void ClientShowVignette(bool newState);
-	virtual void ClientShowVignette_Implementation(bool newState);
-	virtual bool ClientShowVignette_Validate(bool newState);
 
 	UFUNCTION(BlueprintCallable, Category = "Template - Player")
 	void ApplyNewPower();

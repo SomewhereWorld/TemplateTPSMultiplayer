@@ -183,11 +183,6 @@ void ATemplateCharacter::GetLifetimeReplicatedProps(TArray< FLifetimeProperty>& 
 	DOREPLIFETIME(ATemplateCharacter, _currentClientState);
 }
 
-int ATemplateCharacter::GetTeamNumber()
-{
-	return _teamNumber;
-}
-
 int ATemplateCharacter::GetHealth()
 {
 	return _health;
@@ -222,6 +217,16 @@ void ATemplateCharacter::ClientShowVignette_Implementation(bool newState)
 }
 
 bool ATemplateCharacter::ClientShowVignette_Validate(bool newState)
+{
+	return true;
+}
+
+void ATemplateCharacter::ClientResetWeapon_Implementation()
+{
+	_weapon->Reset();
+}
+
+bool ATemplateCharacter::ClientResetWeapon_Validate()
 {
 	return true;
 }
@@ -263,6 +268,7 @@ void ATemplateCharacter::Init()
 void ATemplateCharacter::MoveForward(float Amount)
 {
 	if (_currentClientState != EClientState::Alive) return;
+
 	if (Controller != NULL && Amount != 0.0f)
 	{
 		if (_currentPlayerState == EPlayerState::Idle || _currentPlayerState == EPlayerState::None)
@@ -484,6 +490,7 @@ void ATemplateCharacter::ResetStats()
 	{
 		_health = 100;
 		_currentClientState = EClientState::Alive;
+		ClientResetWeapon();
 	}
 	else if (Role < ROLE_Authority)
 	{
@@ -859,7 +866,7 @@ void ATemplateCharacter::ServerChangePower_Implementation(int phase, EPlayerPowe
 	_playerState->SetPlayerPower(phase, newPower);
 	ApplyNewPower();
 	auto currentGameMode = Cast<AMyProjectGameMode>(GetWorld()->GetAuthGameMode());
-	if(currentGameMode)
+	if(currentGameMode && phase == 1)
 		currentGameMode->AddPlayerReady();
 }
 

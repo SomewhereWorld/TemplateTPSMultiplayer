@@ -51,6 +51,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Template")
 	EPlayerPower GetPower3();
 
+	void ResetPlayer();
+
 protected:
 
 	UPROPERTY(Replicated)

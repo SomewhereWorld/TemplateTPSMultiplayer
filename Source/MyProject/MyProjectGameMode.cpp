@@ -22,12 +22,11 @@ void AMyProjectGameMode::BeginPlay()
 void AMyProjectGameMode::StartGame()
 {
 	AffectTeams();
-	Respawn();
 }
 
 void AMyProjectGameMode::ServerRespawnPlayer_Implementation(ATemplateCharacter* character)
 {
-	if (character->GetTeamNumber() == 0)
+	if (character->GetCastedPlayerState()->GetPlayerTeamNumber() == 0)
 	{
 		int index = FMath::RandRange(0, _teamOneSpawn.Num() - 1);
 		character->SetActorLocation(_teamOneSpawn[index]->GetActorLocation());
@@ -63,6 +62,9 @@ void AMyProjectGameMode::GetAllRespawn()
 	}
 }
 
+// TEAM 1 : _teamOnePlayers
+// TEAM 0 : _teamTwoPlayers
+
 void AMyProjectGameMode::AffectTeams()
 {
 	TArray<ATemplatePlayerState*> allPlayerStates;
@@ -81,10 +83,11 @@ void AMyProjectGameMode::AffectTeams()
 	{
 		if (i % 2 == 1)
 		{
+			UE_LOG(LogTemp, Warning, TEXT("SETTING TEAM ONE"));
 			if (allPlayerStates[i] != nullptr)
 			{
 				allPlayerStates[i]->SetPlayerTeamNumber(1);
-				
+				UE_LOG(LogTemp, Warning, TEXT("SET !"));
 			}
 			_teamOnePlayers.Add(allCharacters[i]);
 		}
@@ -97,7 +100,7 @@ void AMyProjectGameMode::AffectTeams()
 
 void AMyProjectGameMode::PlayerDie(ATemplateCharacter* thePlayer)
 {
-	if (thePlayer->GetTeamNumber() == 0)
+	if (thePlayer->GetCastedPlayerState()->GetPlayerTeamNumber() == 1)
 	{
 		_teamOneAlivePlayers.Remove(thePlayer);
 		if (_teamOneAlivePlayers.Num() <= 0)
@@ -112,10 +115,6 @@ void AMyProjectGameMode::PlayerDie(ATemplateCharacter* thePlayer)
 				_teamTwoPlayers[i]->ShowWinningTeam(1);
 			}
 			GetWorld()->GetTimerManager().SetTimer(_startTimerHandle, this, &AMyProjectGameMode::Respawn, 5.0f, false);
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("_teamOneAlivePlayers %i"), _teamOneAlivePlayers.Num());
 		}
 	}
 	else
@@ -134,10 +133,6 @@ void AMyProjectGameMode::PlayerDie(ATemplateCharacter* thePlayer)
 			}
 			GetWorld()->GetTimerManager().SetTimer(_startTimerHandle, this, &AMyProjectGameMode::Respawn, 5.0f, false);
 		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("_teamTwoAlivePlayers %i"), _teamTwoAlivePlayers.Num());
-		}
 	}
 }
 
@@ -148,6 +143,7 @@ void AMyProjectGameMode::Respawn()
 		if (_teamOnePlayers[i] && _teamOneSpawn[i])
 		{
 			_teamOnePlayers[i]->CleanWidgetWinningTeam();
+			_teamOnePlayers[i]->ClientShowVignette(false);
 			_teamOnePlayers[i]->ResetStats();
 			_teamOnePlayers[i]->SetActorLocation(_teamOneSpawn[i]->GetActorLocation());
 			_teamOneAlivePlayers.Add(_teamOnePlayers[i]);
@@ -167,9 +163,10 @@ void AMyProjectGameMode::Respawn()
 
 	for (auto i = 0; i < _teamTwoPlayers.Num(); i++)
 	{
-		if (_teamTwoPlayers[i] && _teamOneSpawn[i])
+		if (_teamTwoPlayers[i] && _teamTwoSpawn[i])
 		{
 			_teamTwoPlayers[i]->CleanWidgetWinningTeam();
+			_teamTwoPlayers[i]->ClientShowVignette(false);
 			_teamTwoPlayers[i]->ResetStats();
 			_teamTwoPlayers[i]->SetActorLocation(_teamTwoSpawn[i]->GetActorLocation());
 			_teamTwoAlivePlayers.Add(_teamTwoPlayers[i]);
@@ -195,15 +192,21 @@ void AMyProjectGameMode::AddPlayerReady()
 	if (_nbPlayersReady >= nbPlayerNeeded)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("ALL PLAYERS READY"));
-		// All players are ready to start
-		for (TActorIterator<ATemplateCharacter> ActorItr(GetWorld()); ActorItr; ++ActorItr)
+		GetWorld()->GetTimerManager().SetTimer(_startTimerHandle, this, &AMyProjectGameMode::LaunchGame, 5.0f, false);
+	}
+}
+
+void AMyProjectGameMode::LaunchGame()
+{
+	// All players are ready to start
+	for (TActorIterator<ATemplateCharacter> ActorItr(GetWorld()); ActorItr; ++ActorItr)
+	{
+		ATemplateCharacter* aPlayer = Cast<ATemplateCharacter>(*ActorItr);
+		if (aPlayer)
 		{
-			ATemplateCharacter* aPlayer = Cast<ATemplateCharacter>(*ActorItr);
-			if (aPlayer)
-			{
-				aPlayer->SetClientState(EClientState::Alive);
-				aPlayer->LaunchGame();
-			}
+			aPlayer->SetClientState(EClientState::Alive);
+			aPlayer->LaunchGame();
 		}
 	}
+	Respawn();
 }

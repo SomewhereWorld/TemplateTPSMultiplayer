@@ -14,15 +14,16 @@ Features Done :
   - Power
   - Power selection  
   - Team
+  - Victory / Defeat
 
 Features in progress :
 
-  - Victory / Defeat (nearly ok)
   - Basic map
+  - Give Power
+  - End Game
 
 Features incoming in the project :
 
-  - Give Power
   - Lobby 
   - Customization
   - More Sounds

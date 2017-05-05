@@ -169,3 +169,13 @@ void ATemplateWeapon::PlayReloadSound()
 	_audioComponent->SetSound(_reloadSound);
 	_audioComponent->Play();
 }
+
+void ATemplateWeapon::ResetWeapon()
+{
+	_bulletsInStock = 350;
+	_currentReloadTime = 0.0f;
+	_currentFireRateTime = 0.0f;
+	_canFire = true;
+	_currentBulletsInMagazine = _maxBulletsInMagazine;
+	_isReloading = false;
+}

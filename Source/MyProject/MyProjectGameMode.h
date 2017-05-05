@@ -49,6 +49,8 @@ private:
 
 	void StartGame();
 	
+	void LaunchGame();
+
 	int _indexRespawnOne;
 	int _indexRespawnTwo;
 

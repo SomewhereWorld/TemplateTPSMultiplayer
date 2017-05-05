@@ -14,6 +14,8 @@ ATemplatePlayerState::ATemplatePlayerState()
 	_playerPower = EPlayerPower::None;
 	_playerPower2 = EPlayerPower::None;
 	_playerPower3 = EPlayerPower::None;
+	
+	bReplicates = true;
 }
 
 void ATemplatePlayerState::GetLifetimeReplicatedProps(TArray< FLifetimeProperty>& OutLifetimeProps) const

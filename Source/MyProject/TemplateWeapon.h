@@ -51,6 +51,8 @@ public:
 
 	void PlayReloadSound();
 
+	void ResetWeapon();
+
 protected:
 
 	// ****components****
