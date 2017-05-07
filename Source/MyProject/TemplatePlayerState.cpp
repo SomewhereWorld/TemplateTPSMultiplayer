@@ -2,6 +2,7 @@
 
 #include "MyProject.h"
 #include "TemplatePlayerState.h"
+#include "TemplateGameInstance.h"
 
 ATemplatePlayerState::ATemplatePlayerState()
 {
@@ -31,6 +32,20 @@ void ATemplatePlayerState::GetLifetimeReplicatedProps(TArray< FLifetimeProperty>
 	DOREPLIFETIME(ATemplatePlayerState, _playerPower);
 	DOREPLIFETIME(ATemplatePlayerState, _playerPower2);
 	DOREPLIFETIME(ATemplatePlayerState, _playerPower3);
+}
+
+
+void ATemplatePlayerState::BeginPlay()
+{
+	if (!HasAuthority())
+	{
+		UTemplateGameInstance* GI = Cast<UTemplateGameInstance>(GetGameInstance());
+		if (GI)
+		{
+			_playerTeamNumber = GI->teamToSpawnIn;
+			ServerChangeTeamNumber(_playerTeamNumber);
+		}
+	}
 }
 
 void ATemplatePlayerState::AddKill(int Amount)
@@ -114,4 +129,14 @@ EPlayerPower ATemplatePlayerState::GetPower2()
 EPlayerPower ATemplatePlayerState::GetPower3()
 {
 	return _playerPower3;
+}
+
+void ATemplatePlayerState::ServerChangeTeamNumber_Implementation(int teamNumber)
+{
+	_playerTeamNumber = teamNumber;
+}
+
+bool ATemplatePlayerState::ServerChangeTeamNumber_Validate(int teamNumber)
+{
+	return true;
 }

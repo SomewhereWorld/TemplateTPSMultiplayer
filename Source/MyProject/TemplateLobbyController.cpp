@@ -27,7 +27,6 @@ void ATemplateLobbyController::BeginPlay()
 		if (gameInstance)
 		{
 			_name = gameInstance->playerName;
-			UE_LOG(LogTemp, Warning, TEXT("AddAControllerToList"));
 			AddAControllerToList(this);
 		}
 		else
@@ -126,4 +125,18 @@ bool ATemplateLobbyController::ClientUpdateController_Validate(FLobbyControllerI
 void ATemplateLobbyController::SetControllerName(FString newName)
 {
 	_name = newName;
+}
+
+void ATemplateLobbyController::ClientSaveTeam_Implementation(int teamToSave)
+{
+	UTemplateGameInstance* gameInstance = Cast<UTemplateGameInstance>(GetGameInstance());
+	if (gameInstance)
+	{
+		gameInstance->SaveTeamNumber(teamToSave);
+	}
+}
+
+bool ATemplateLobbyController::ClientSaveTeam_Validate(int teamToSave)
+{
+	return true;
 }

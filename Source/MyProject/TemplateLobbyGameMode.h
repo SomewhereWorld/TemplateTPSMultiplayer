@@ -18,6 +18,8 @@ class MYPROJECT_API ATemplateLobbyGameMode : public AGameMode
 	
 public:
 
+	virtual void BeginPlay() override;
+
 	void AddControllerToList(ATemplateLobbyController* newController);
 
 	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty>& OutLifetimeProps) const override;
@@ -27,6 +29,8 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Template - Lobby Game Mode")
 	void SetNewIndex(FString name, int newIndex);
+
+	void LaunchGame();
 
 private:
 
@@ -41,4 +45,6 @@ private:
 	TArray<ATemplateLobbyController*> _pendingControllers;
 	
 	void UpdateAllControllers(FLobbyControllerInfos info);
+
+	FTimerHandle _startTimerHandle;
 };

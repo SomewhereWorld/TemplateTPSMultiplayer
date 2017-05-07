@@ -4,6 +4,16 @@
 #include "TemplateLobbyGameMode.h"
 #include "TemplateLobbyController.h"
 
+void ATemplateLobbyGameMode::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (HasAuthority())
+		GetWorld()->GetTimerManager().SetTimer(_startTimerHandle, this, &ATemplateLobbyGameMode::LaunchGame, 20.0f, false);
+
+	bUseSeamlessTravel = false;
+}
+
 void ATemplateLobbyGameMode::AddControllerToList(ATemplateLobbyController* newController)
 {
 	if (!isAffecting)
@@ -29,10 +39,13 @@ void ATemplateLobbyGameMode::AddControllerToList(ATemplateLobbyController* newCo
 					FLobbyControllerInfos controllerInfos;
 					controllerInfos.name = newController->GetName();
 					_allControllers[i]->ClientRefreshHUD(controllerInfos);
-					FLobbyControllerInfos controllerInfos2;
-					controllerInfos2.name = _allControllers[i]->GetName();
-					newController->ClientRefreshHUD(controllerInfos2);
+
 				}
+			}
+
+			for (int i = 0; i < _allInfos.Num(); i++)
+			{
+				newController->ClientRetreiveController(_allInfos[i]);
 			}
 
 			FLobbyControllerInfos controllerInfos;
@@ -100,4 +113,31 @@ void ATemplateLobbyGameMode::UpdateAllControllers(FLobbyControllerInfos info)
 	{
 		_allControllers[i]->ClientUpdateController(info);
 	}
+}
+
+void ATemplateLobbyGameMode::LaunchGame()
+{
+	for (int i = 0; i < _allControllers.Num(); i++)
+	{
+		for (int j = 0; j < _allInfos.Num(); j++)
+		{
+			if (_allInfos[j].name.Equals(_allControllers[i]->GetName()))
+			{
+				if (_allInfos[j].indexPos == -1)
+				{
+					UE_LOG(LogTemp, Warning, TEXT("Player %s chose team %i"), *_allInfos[j].name, 0);
+					_allControllers[i]->ClientSaveTeam(0);
+				}
+				else if (_allInfos[j].indexPos == 1)
+				{
+					UE_LOG(LogTemp, Warning, TEXT("Player %s chose team %i"), *_allInfos[j].name, 1);
+					_allControllers[i]->ClientSaveTeam(1);
+				}
+				else
+					UE_LOG(LogTemp, Warning, TEXT("ERROR, Player %s didn't choose a team"), *_allInfos[j].name);
+			}
+		}
+	}
+
+	ProcessServerTravel("/Game/Template/Maps/Test?listen");
 }

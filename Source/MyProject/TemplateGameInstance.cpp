@@ -6,9 +6,15 @@
 UTemplateGameInstance::UTemplateGameInstance()
 {
 	playerName = "player1";
+	teamToSpawnIn = -1;
 }
 
 void UTemplateGameInstance::SaveName(FString newName)
 {
 	playerName = newName;
+}
+
+void UTemplateGameInstance::SaveTeamNumber(int teamNumber)
+{
+	teamToSpawnIn = teamNumber;
 }

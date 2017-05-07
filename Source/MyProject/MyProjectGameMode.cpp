@@ -74,6 +74,7 @@ void AMyProjectGameMode::GetAllRespawn()
 // TEAM 1 : _teamOnePlayers (Red)
 // TEAM 0 : _teamTwoPlayers (Blue)
 
+//Server
 void AMyProjectGameMode::AffectTeams()
 {
 	TArray<ATemplatePlayerState*> allPlayerStates;
@@ -90,7 +91,18 @@ void AMyProjectGameMode::AffectTeams()
 
 	for (auto i = 0; i < allPlayerStates.Num(); i++)
 	{
-		if (i % 2 == 1)
+		if (allPlayerStates[i] && allPlayerStates[i]->GetPlayerTeamNumber() == 1)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("TEAM 1 FIND"));
+			_teamOnePlayers.Add(allCharacters[i]);
+		}
+		else if(allPlayerStates[i])
+		{
+			UE_LOG(LogTemp, Warning, TEXT("TEAM 0 FIND"));
+			_teamTwoPlayers.Add(allCharacters[i]);
+		}
+
+		/*if (i % 2 == 1)
 		{
 			if (allPlayerStates[i] != nullptr)
 			{
@@ -101,7 +113,7 @@ void AMyProjectGameMode::AffectTeams()
 		else
 		{
 			_teamTwoPlayers.Add(allCharacters[i]);
-		}
+		}*/
 	}
 }
 
@@ -110,7 +122,6 @@ void AMyProjectGameMode::PlayerDie(ATemplateCharacter* thePlayer)
 {
 	if (thePlayer->GetCastedPlayerState()->GetPlayerTeamNumber() == 1)
 	{
-
 		_teamOneAlivePlayers.Remove(thePlayer);
 
 		if (_teamOneAlivePlayers.Num() <= 0)

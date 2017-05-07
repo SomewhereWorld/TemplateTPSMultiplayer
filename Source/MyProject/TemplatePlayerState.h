@@ -18,6 +18,8 @@ public:
 
 	ATemplatePlayerState();
 
+	virtual void BeginPlay() override;
+
 	void AddKill(int Amount);
 	void AddDeath(int Amount);
 	void AddScore(int Amount);
@@ -52,6 +54,11 @@ public:
 	EPlayerPower GetPower3();
 
 	void ResetPlayer();
+
+	UFUNCTION(Reliable, Server, WithValidation)
+	void ServerChangeTeamNumber(int teamNumber);
+	virtual void ServerChangeTeamNumber_Implementation(int teamNumber);
+	virtual bool ServerChangeTeamNumber_Validate(int teamNumber);
 
 protected:
 

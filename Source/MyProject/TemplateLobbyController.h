@@ -74,6 +74,11 @@ public:
 
 	void SetControllerName(FString newName);
 
+	UFUNCTION(Reliable, Client, WithValidation)
+	void ClientSaveTeam(int teamToSave);
+	virtual void ClientSaveTeam_Implementation(int teamToSave);
+	virtual bool ClientSaveTeam_Validate(int teamToSave);
+
 private:
 
 	UPROPERTY(replicated)

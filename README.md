@@ -17,13 +17,14 @@ Features Done :
   - Team
   - Victory / Defeat
   - Give Power
-    - Lobby 
+  - Lobby
+
 
 Features in progress :
 
   - Basic map
   - End Game  
-  - Transition Lobby - Game
+  - Transition Lobby / Game
 
 
 Features incoming in the project :

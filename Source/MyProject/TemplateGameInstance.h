@@ -22,4 +22,10 @@ public:
 	
 	void SaveName(FString newName);
 
+	// save across the game
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Template - Game Instance")
+	int teamToSpawnIn;
+	
+	void SaveTeamNumber(int teamNumber);
+
 };
