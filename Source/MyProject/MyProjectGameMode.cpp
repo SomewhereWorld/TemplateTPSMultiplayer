@@ -6,6 +6,11 @@
 #include "TemplateCharacter.h"
 #include "TemplatePlayerState.h"
 
+AMyProjectGameMode::AMyProjectGameMode()
+{
+	nbPlayerNeeded = 6;
+}
+
 void AMyProjectGameMode::BeginPlay()
 {
 	_indexRespawnOne = 0;
@@ -13,7 +18,11 @@ void AMyProjectGameMode::BeginPlay()
 	GetAllRespawn();
 
 	_nbPlayersReady = 0;
-	nbPlayerNeeded = 6;
+
+	_teamOneWin = 0;
+	_teamTwoWin = 0;
+
+	_scoreToReach = 5;
 
 	if(HasAuthority())
 		GetWorld()->GetTimerManager().SetTimer(_startTimerHandle, this, &AMyProjectGameMode::StartGame, 5.0f, false);
@@ -62,8 +71,8 @@ void AMyProjectGameMode::GetAllRespawn()
 	}
 }
 
-// TEAM 1 : _teamOnePlayers
-// TEAM 0 : _teamTwoPlayers
+// TEAM 1 : _teamOnePlayers (Red)
+// TEAM 0 : _teamTwoPlayers (Blue)
 
 void AMyProjectGameMode::AffectTeams()
 {
@@ -106,20 +115,27 @@ void AMyProjectGameMode::PlayerDie(ATemplateCharacter* thePlayer)
 
 		if (_teamOneAlivePlayers.Num() <= 0)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("TEAM TWO WIN"));
+			_teamTwoWin++;
 			for (auto i = 0; i < _teamOnePlayers.Num(); i++)
 			{
-				_teamOnePlayers[i]->ShowWinningTeam(1);
+				_teamOnePlayers[i]->ShowWinningTeam(0, _teamOneWin, _teamTwoWin);
 			}
 			for (auto i = 0; i < _teamTwoPlayers.Num(); i++)
 			{
-				_teamTwoPlayers[i]->ShowWinningTeam(1);
+				_teamTwoPlayers[i]->ShowWinningTeam(0, _teamOneWin, _teamTwoWin);
 			}
-			GetWorld()->GetTimerManager().SetTimer(_startTimerHandle, this, &AMyProjectGameMode::Respawn, 5.0f, false);
+			if (_teamTwoWin < _scoreToReach)
+			{
+				GetWorld()->GetTimerManager().SetTimer(_startTimerHandle, this, &AMyProjectGameMode::Respawn, 5.0f, false);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Team Two Win the Game !"));
+				UE_LOG(LogTemp, Warning, TEXT("back to lobby..."));
+			}
 		}
 		else
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Give My Power !"));
 			GivePower(thePlayer, 1);
 		}
 	}
@@ -130,20 +146,28 @@ void AMyProjectGameMode::PlayerDie(ATemplateCharacter* thePlayer)
 
 		if (_teamTwoAlivePlayers.Num() <= 0)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("TEAM ONE WIN"));
+			_teamOneWin++;
 			for (auto i = 0; i < _teamOnePlayers.Num(); i++)
 			{
-				_teamOnePlayers[i]->ShowWinningTeam(0);
+				_teamOnePlayers[i]->ShowWinningTeam(1, _teamOneWin, _teamTwoWin);
 			}
 			for (auto i = 0; i < _teamTwoPlayers.Num(); i++)
 			{
-				_teamTwoPlayers[i]->ShowWinningTeam(0);
+				_teamTwoPlayers[i]->ShowWinningTeam(1, _teamOneWin, _teamTwoWin);
 			}
-			GetWorld()->GetTimerManager().SetTimer(_startTimerHandle, this, &AMyProjectGameMode::Respawn, 5.0f, false);
+			
+			if (_teamOneWin < _scoreToReach)
+			{
+				GetWorld()->GetTimerManager().SetTimer(_startTimerHandle, this, &AMyProjectGameMode::Respawn, 5.0f, false);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Team One Win the Game !"));
+				UE_LOG(LogTemp, Warning, TEXT("back to lobby..."));
+			}
 		}
 		else
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Give My Power !"));
 			GivePower(thePlayer, 0);
 		}
 	}
@@ -151,12 +175,10 @@ void AMyProjectGameMode::PlayerDie(ATemplateCharacter* thePlayer)
 
 void AMyProjectGameMode::GivePower(ATemplateCharacter* thePlayer, int teamNumber)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Giving power for team %i"), teamNumber);
 	if (teamNumber == 1)
 	{
 		for (auto i = 0; i < _teamOneAlivePlayers.Num(); i++)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Receiving power for team 1"));
 			if (_teamOneAlivePlayers.Num() == 2)
 				_teamOneAlivePlayers[i]->ChangePlayerPower(2, thePlayer->GetCastedPlayerState()->GetPower1());
 			else if (_teamOneAlivePlayers.Num() == 1)
@@ -169,15 +191,12 @@ void AMyProjectGameMode::GivePower(ATemplateCharacter* thePlayer, int teamNumber
 	{
 		for (auto i = 0; i < _teamTwoAlivePlayers.Num(); i++)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Receiving power for team 0"));
 			if (_teamTwoAlivePlayers.Num() == 2)
 			{
-				UE_LOG(LogTemp, Warning, TEXT("_teamTwoAlivePlayers.Num() == 2"));
 				_teamTwoAlivePlayers[i]->ChangePlayerPower(2, thePlayer->GetCastedPlayerState()->GetPower1());
 			}
 			else if (_teamTwoAlivePlayers.Num() == 1)
 			{
-				UE_LOG(LogTemp, Warning, TEXT("_teamTwoAlivePlayers.Num() == 1"));
 				_teamTwoAlivePlayers[i]->ChangePlayerPower(3, thePlayer->GetCastedPlayerState()->GetPower1());
 			}
 
@@ -239,6 +258,7 @@ void AMyProjectGameMode::AddPlayerReady()
 {
 	_nbPlayersReady++;
 	UE_LOG(LogTemp, Warning, TEXT("A PLAYER READY"));
+	UE_LOG(LogTemp, Warning, TEXT("needed %i players"), nbPlayerNeeded);
 	if (_nbPlayersReady >= nbPlayerNeeded)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("ALL PLAYERS READY"));

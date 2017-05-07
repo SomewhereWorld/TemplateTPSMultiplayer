@@ -51,7 +51,7 @@ public:
 	void LaunchGame();
 
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Template - Player")
-	void ShowWinningTeam(int teamNumber);
+	void ShowWinningTeam(int teamNumber, int scoreTeamOne, int scoreTeamTwo);
 
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Template - Player")
 	void CleanWidgetWinningTeam();

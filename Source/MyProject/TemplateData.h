@@ -33,3 +33,20 @@ enum class EClientState : uint8
 	Dead 		UMETA(DisplayName = "Dead"),
 	Stuck		UMETA(DisplayName = "Stuck"),
 };
+
+USTRUCT(BlueprintType)
+struct FLobbyControllerInfos
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Template Data")
+	FString name;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Template Data")
+	int indexPos; // the position of the player in the team tab (-1,0,1)
+
+	FLobbyControllerInfos()
+	{
+		name = "";
+		indexPos = 0;
+	}
+};

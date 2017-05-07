@@ -17,17 +17,20 @@ Features Done :
   - Team
   - Victory / Defeat
   - Give Power
+    - Lobby 
 
 Features in progress :
 
   - Basic map
-  - End Game
+  - End Game  
+  - Transition Lobby - Game
+
 
 Features incoming in the project :
 
-  - Lobby 
   - Customization
   - More Sounds
   - Feedbacks
   - More Weapons
   - (grappling ?)
+  - Tweak

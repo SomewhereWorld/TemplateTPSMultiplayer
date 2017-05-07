@@ -17,6 +17,8 @@ class MYPROJECT_API AMyProjectGameMode : public AGameMode
 	
 public:
 
+	AMyProjectGameMode();
+
 	virtual void BeginPlay() override;
 
 	UFUNCTION(Reliable, Server, WithValidation)
@@ -59,4 +61,8 @@ private:
 	FTimerHandle _startTimerHandle;
 
 	int _nbPlayersReady;
+
+	int _teamOneWin;
+	int _teamTwoWin;
+	int _scoreToReach;
 };
