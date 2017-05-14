@@ -93,12 +93,12 @@ void AMyProjectGameMode::AffectTeams()
 	{
 		if (allPlayerStates[i] && allPlayerStates[i]->GetPlayerTeamNumber() == 1)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("TEAM 1 FIND"));
+			UE_LOG(LogTemp, Warning, TEXT("TEAM 1 FIND for %s"), *allPlayerStates[i]->GetPlayerName());
 			_teamOnePlayers.Add(allCharacters[i]);
 		}
 		else if(allPlayerStates[i])
 		{
-			UE_LOG(LogTemp, Warning, TEXT("TEAM 0 FIND"));
+			UE_LOG(LogTemp, Warning, TEXT("TEAM 0 FIND for %s"), *allPlayerStates[i]->GetPlayerName());
 			_teamTwoPlayers.Add(allCharacters[i]);
 		}
 

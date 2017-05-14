@@ -75,9 +75,9 @@ public:
 	void SetControllerName(FString newName);
 
 	UFUNCTION(Reliable, Client, WithValidation)
-	void ClientSaveTeam(int teamToSave);
-	virtual void ClientSaveTeam_Implementation(int teamToSave);
-	virtual bool ClientSaveTeam_Validate(int teamToSave);
+	void ClientSaveTeam(int teamToSave, const FString& theName);
+	virtual void ClientSaveTeam_Implementation(int teamToSave, const FString& theName);
+	virtual bool ClientSaveTeam_Validate(int teamToSave, const FString& theName);
 
 private:
 

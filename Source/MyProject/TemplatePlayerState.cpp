@@ -43,7 +43,8 @@ void ATemplatePlayerState::BeginPlay()
 		if (GI)
 		{
 			_playerTeamNumber = GI->teamToSpawnIn;
-			ServerChangeTeamNumber(_playerTeamNumber);
+			_playerName = GI->playerName;
+			ServerChangeTeamNumber(_playerTeamNumber, _playerName);
 		}
 	}
 }
@@ -91,7 +92,7 @@ int ATemplatePlayerState::GetScore()
 	return _playerScore;
 }
 
-FString ATemplatePlayerState::GetName()
+FString ATemplatePlayerState::GetPlayerName()
 {
 	return _playerName;
 }
@@ -131,12 +132,25 @@ EPlayerPower ATemplatePlayerState::GetPower3()
 	return _playerPower3;
 }
 
-void ATemplatePlayerState::ServerChangeTeamNumber_Implementation(int teamNumber)
+void ATemplatePlayerState::ServerChangeTeamNumber_Implementation(int teamNumber, const FString& theName)
 {
 	_playerTeamNumber = teamNumber;
+	_playerName = theName;
+	MulticastChangeTeamNumber(teamNumber, theName);
 }
 
-bool ATemplatePlayerState::ServerChangeTeamNumber_Validate(int teamNumber)
+bool ATemplatePlayerState::ServerChangeTeamNumber_Validate(int teamNumber, const FString& theName)
+{
+	return true;
+}
+
+void ATemplatePlayerState::MulticastChangeTeamNumber_Implementation(int teamNumber, const FString& theName)
+{
+	_playerTeamNumber = teamNumber;
+	_playerName = theName;
+}
+
+bool ATemplatePlayerState::MulticastChangeTeamNumber_Validate(int teamNumber, const FString& theName)
 {
 	return true;
 }

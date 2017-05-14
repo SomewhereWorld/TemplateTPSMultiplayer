@@ -126,12 +126,12 @@ void ATemplateLobbyGameMode::LaunchGame()
 				if (_allInfos[j].indexPos == -1)
 				{
 					UE_LOG(LogTemp, Warning, TEXT("Player %s chose team %i"), *_allInfos[j].name, 0);
-					_allControllers[i]->ClientSaveTeam(0);
+					_allControllers[i]->ClientSaveTeam(0, _allInfos[j].name);
 				}
 				else if (_allInfos[j].indexPos == 1)
 				{
 					UE_LOG(LogTemp, Warning, TEXT("Player %s chose team %i"), *_allInfos[j].name, 1);
-					_allControllers[i]->ClientSaveTeam(1);
+					_allControllers[i]->ClientSaveTeam(1, _allInfos[j].name);
 				}
 				else
 					UE_LOG(LogTemp, Warning, TEXT("ERROR, Player %s didn't choose a team"), *_allInfos[j].name);

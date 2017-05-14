@@ -127,16 +127,17 @@ void ATemplateLobbyController::SetControllerName(FString newName)
 	_name = newName;
 }
 
-void ATemplateLobbyController::ClientSaveTeam_Implementation(int teamToSave)
+void ATemplateLobbyController::ClientSaveTeam_Implementation(int teamToSave, const FString& theName)
 {
 	UTemplateGameInstance* gameInstance = Cast<UTemplateGameInstance>(GetGameInstance());
 	if (gameInstance)
 	{
 		gameInstance->SaveTeamNumber(teamToSave);
+		gameInstance->SaveName(theName);
 	}
 }
 
-bool ATemplateLobbyController::ClientSaveTeam_Validate(int teamToSave)
+bool ATemplateLobbyController::ClientSaveTeam_Validate(int teamToSave, const FString& theName)
 {
 	return true;
 }

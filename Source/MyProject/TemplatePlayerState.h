@@ -34,7 +34,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Template")
 	int GetScore();
 	UFUNCTION(BlueprintCallable, Category = "Template")
-	FString GetName();
+	FString GetPlayerName();
 	UFUNCTION(BlueprintCallable, Category = "Template")
 	int GetPlayerTeamNumber();
 
@@ -56,9 +56,14 @@ public:
 	void ResetPlayer();
 
 	UFUNCTION(Reliable, Server, WithValidation)
-	void ServerChangeTeamNumber(int teamNumber);
-	virtual void ServerChangeTeamNumber_Implementation(int teamNumber);
-	virtual bool ServerChangeTeamNumber_Validate(int teamNumber);
+	void ServerChangeTeamNumber(int teamNumber, const FString& theName);
+	virtual void ServerChangeTeamNumber_Implementation(int teamNumber, const FString& theName);
+	virtual bool ServerChangeTeamNumber_Validate(int teamNumber, const FString& theName);
+
+	UFUNCTION(Reliable, NetMulticast, WithValidation)
+	void MulticastChangeTeamNumber(int teamNumber, const FString& theName);
+	virtual void MulticastChangeTeamNumber_Implementation(int teamNumber, const FString& theName);
+	virtual bool MulticastChangeTeamNumber_Validate(int teamNumber, const FString& theName);
 
 protected:
 
