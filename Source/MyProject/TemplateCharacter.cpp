@@ -500,7 +500,7 @@ void ATemplateCharacter::ResetStats()
 {
 	if (Role == ROLE_Authority)
 	{
-		_health = 100;
+		_health = _healthMax;
 		_currentClientState = EClientState::Alive;
 		ClientResetWeapon();
 	}
